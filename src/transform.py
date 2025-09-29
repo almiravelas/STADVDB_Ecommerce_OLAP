@@ -31,10 +31,7 @@ def transform_dim_rider(df: pd.DataFrame) -> pd.DataFrame:
     df.rename(columns={'id': 'rider_key'}, inplace=True)
     df['gender'] = standardize_gender(df['gender'])
     
-    # The age grouping logic has been removed as requested.
-    
-    # The final selection now includes the original 'age' column instead of 'age_group'.
-    dim_df = df[['rider_key', 'rider_name', 'vehicleType', 'gender', 'age']]
+    dim_df = df[['rider_key', 'rider_name', 'vehicleType', 'gender', 'age', 'courier_name']]
     
     print("Rider dimension transformed.")
     return dim_df
