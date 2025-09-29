@@ -19,12 +19,14 @@ def dim_rider(): # Aza WIP
     print("\n[DIMENSION] Processing Rider Dimension...")
     rider_query = """
         SELECT 
-            id, 
-            CONCAT(firstName, ' ', lastName) AS rider_name, 
-            vehicleType,
-            age,
-            gender
-        FROM riders;
+            r.id, 
+            CONCAT(r.firstName, ' ', r.lastName) AS rider_name, 
+            r.vehicleType,
+            r.age,
+            r.gender,
+            c.name AS courier_name
+        FROM riders r
+        LEFT JOIN couriers c ON r.courierId = c.id;
     """
     source_df = extract_from_db(rider_query)
     transformed_df = transform_dim_rider(source_df)
