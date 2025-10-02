@@ -2,3 +2,6 @@ python-dotenv
 pandas
 SQLAlchemy
 mysql-connector-python
+
+streamlit
+plotly

@@ -42,7 +42,23 @@ def dim_date():
     pass
 
 def fact_sales():
-    pass
+    print("\n[FACT] Processing Sales Fact...")
+    sales_query = """
+        SELECT
+            oi.quantity,
+            p.price,
+            o.orderNumber,
+            o.userId,
+            oi.ProductId,
+            o.deliveryRiderId,
+            o.deliveryDate
+        FROM orderitems oi
+        LEFT JOIN orders o ON oi.OrderId = o.id
+        LEFT JOIN products p ON oi.ProductId = p.id;
+    """
+    source_df = extract_from_db(sales_query)
+    transformed_df = transform_fact_sales(source_df)
+    load_to_warehouse(transformed_df, "fact_sales")
 
 
 def main():
@@ -52,7 +68,7 @@ def main():
     # dim_product()
     # dim_date()
     
-    # fact_sales() 
+    fact_sales() 
 
 
 if __name__ == "__main__":
