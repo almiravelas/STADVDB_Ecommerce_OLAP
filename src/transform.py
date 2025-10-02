@@ -58,12 +58,56 @@ def transform_dim_date(df: pd.DataFrame) -> pd.DataFrame:
     pass
     return df
 
-def transform_fact_sales(
-    orders_df: pd.DataFrame, 
-    orderitems_df: pd.DataFrame, 
-    dim_customer_df: pd.DataFrame, 
-    dim_product_df: pd.DataFrame,
-    dim_date_df: pd.DataFrame
-) -> pd.DataFrame:
-    pass
-    return pd.DataFrame() # wala pa for now
+
+def transform_fact_sales(df: pd.DataFrame) -> pd.DataFrame:
+    """Transforms raw sales data into a sales fact table."""
+    if df is None:
+        return None
+
+    print("Transforming sales data...")
+
+    df.rename(columns={
+        'userId': 'customer_key',
+        'ProductId': 'product_key',
+        'deliveryRiderId': 'rider_key',
+        'deliveryDate': 'date_key',
+        'price': 'unit_price',
+        'orderNumber': 'order_number'
+    }, inplace=True)
+
+    df = _calculate_sales_measures(df)
+    df = _standardize_sales_date(df)
+    df = _transform_missing_values(df)
+
+    int_columns = ['customer_key', 'product_key', 'rider_key', 'quantity']
+    for col in int_columns:
+        df[col] = df[col].astype(int)
+
+    fact_df = df[[
+        'customer_key',
+        'product_key',
+        'rider_key',
+        'date_key',
+        'order_number',
+        'quantity',
+        'unit_price',
+        'sales_amount'
+    ]]
+
+    print("Sales fact table transformed.")
+    return fact_df
+
+def _calculate_sales_measures(df: pd.DataFrame) -> pd.DataFrame:
+    df['quantity'] = pd.to_numeric(df['quantity'], errors='coerce')
+    df['unit_price'] = pd.to_numeric(df['unit_price'], errors='coerce')
+    
+    df['sales_amount'] = (df['quantity'] * df['unit_price']).round(2)
+    return df
+
+def _standardize_sales_date(df: pd.DataFrame) -> pd.DataFrame:
+    df['date_key'] = pd.to_datetime(df['date_key'], errors='coerce').dt.strftime('%Y-%m-%d')
+    return df
+
+def _transform_missing_values(df: pd.DataFrame) -> pd.DataFrame:
+    df.dropna(inplace=True)
+    return df
