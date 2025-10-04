@@ -1,14 +1,14 @@
 import os
 from dotenv import load_dotenv
-from src.extract import extract_from_db
-from src.transform import (
+from etl.extract import extract_from_db
+from etl.transform import (
     transform_dim_rider,
     transform_dim_customer,
     transform_dim_product,
     transform_dim_date,
     transform_fact_sales
 )
-from src.load import load_to_warehouse
+from etl.load import load_to_warehouse
 
 # load .env
 load_dotenv()
