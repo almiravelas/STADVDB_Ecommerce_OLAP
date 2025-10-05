@@ -109,5 +109,25 @@ def _standardize_sales_date(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 def _transform_missing_values(df: pd.DataFrame) -> pd.DataFrame:
-    df.dropna(inplace=True)
+    # impute - mean
+    # add more cols
+    numeric_cols = ['quantity', 'unit_price', 'sales_amount']
+    for col in numeric_cols:
+        if df[col].isnull().any():
+            mean_val = df[col].mean()
+            # FIX: Reassign the result instead of using inplace=True
+            df[col] = df[col].fillna(mean_val)
+            print(f"Filled NaN in '{col}' with mean value: {mean_val:.2f}")
+
+    # impute - mode
+    if df['date_key'].isnull().any():
+        mode_val = df['date_key'].mode()[0]
+        # FIX: Reassign the result instead of using inplace=True
+        df['date_key'] = df['date_key'].fillna(mode_val)
+        print(f"Filled NaN in 'date_key' with mode value: {mode_val}")
+
+    # drops missing keys
+    key_cols = ['customer_key', 'product_key', 'rider_key']
+    df.dropna(subset=key_cols, inplace=True)
+    
     return df

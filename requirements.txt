@@ -5,3 +5,5 @@ mysql-connector-python
 
 streamlit
 plotly
+
+pytest
