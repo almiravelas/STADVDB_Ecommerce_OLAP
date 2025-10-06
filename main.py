@@ -30,6 +30,10 @@ def dim_rider(): # Aza WIP
     """
     source_df = extract_from_db(rider_query)
     transformed_df = transform_dim_rider(source_df)
+
+    print("--- Transformed dim_rider sample ---")
+    print(transformed_df.head())
+    
     load_to_warehouse(transformed_df, "dim_rider")
 
 def dim_customer():
@@ -58,6 +62,10 @@ def fact_sales():
     """
     source_df = extract_from_db(sales_query)
     transformed_df = transform_fact_sales(source_df)
+    
+    print("--- Transformed fact_sales sample ---")
+    print(transformed_df.head())
+
     load_to_warehouse(transformed_df, "fact_sales")
 
 
