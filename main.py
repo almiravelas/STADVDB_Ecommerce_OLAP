@@ -40,7 +40,27 @@ def dim_customer():
     pass
 
 def dim_product():
-    pass
+    print("\n[DIMENSION] Processing Product Dimension...")
+
+    product_query = """
+        SELECT 
+            p.ID,
+            p.Name,
+            p.Category,
+            p.Description,
+            p.ProductCode,
+            p.Price,
+            p.CreatedAt,
+            p.UpdatedAt
+        FROM products p;
+    """
+    source_df = extract_from_db(product_query)
+    transformed_df = transform_dim_product(source_df)
+
+    print("--- Transformed dim_product sample ---")
+    print(transformed_df.head())
+
+    load_to_warehouse(transformed_df, "dim_product")
     
 def dim_date():
     pass
@@ -71,13 +91,12 @@ def fact_sales():
 
 def main():
     # fact and dimensions (uncomment when done)
-    dim_rider()
+     dim_rider() 
     # dim_customer()
-    # dim_product()
+     dim_product()
     # dim_date()
     
-    fact_sales() 
-
+     fact_sales() 
 
 if __name__ == "__main__":
     main()
