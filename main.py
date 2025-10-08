@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 from etl.extract import extract_from_db
 from etl.transform import (
     transform_dim_rider,
-    transform_dim_customer,
     transform_dim_product,
     transform_dim_date,
     transform_fact_sales
@@ -12,7 +11,6 @@ from etl.load import load_to_warehouse
 
 # load .env
 load_dotenv()
-
 
 def dim_rider(): # Aza WIP
     """Extracts, transforms, and loads the rider dimension."""
@@ -47,7 +45,6 @@ def dim_product():
             p.ID,
             p.Name,
             p.Category,
-            p.Description,
             p.ProductCode,
             p.Price,
             p.CreatedAt,

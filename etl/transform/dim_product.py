@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from .utils import parse_date_formats
 
 def transform_dim_product(df: pd.DataFrame) -> pd.DataFrame:
@@ -7,60 +8,98 @@ def transform_dim_product(df: pd.DataFrame) -> pd.DataFrame:
         print("No data to transform for dim_product.")
         return None
 
-    # Rename columns for consistency
+    # --- Rename columns ---
     df = df.rename(columns={
         "ID": "product_key",
         "Name": "product_name",
         "Category": "category",
-        "Description": "description",
         "ProductCode": "product_code",
         "Price": "price",
         "CreatedAt": "created_at",
         "UpdatedAt": "updated_at"
     })
 
-    # --- 🔧 Fix misalignment: group by product_code to ensure consistent rows ---
-    # If there are duplicated product codes with mismatched info, keep the most complete one
+    # --- Clean whitespace ---
+    text_cols = ["product_name", "category", "product_code"]
+    for col in text_cols:
+        if col in df.columns:
+            df[col] = df[col].astype(str).str.strip()
+
+    # --- Handle duplicates ---
+    df["non_null_count"] = df.notna().sum(axis=1)
     df = (
-        df.sort_values(by=["product_code", "updated_at"], ascending=[True, False])
-        .groupby("product_code", as_index=False)
-        .first()
+        df.sort_values(by=["product_code", "non_null_count", "updated_at"], ascending=[True, False, False])
+        .drop_duplicates(subset=["product_code"], keep="first")
+        .drop(columns=["non_null_count"])
     )
 
-    # Handle capitalization inconsistencies
+    # --- Normalize category names ---
     df["category"] = df["category"].astype(str).str.strip().str.title()
-
-    # Standardize categories with known duplicates
     category_mapping = {
         "Gadgets": "Electronics",
+        "Laptops": "Electronics",
+        "Appliances": "Electronics",
         "Toy": "Toys",
-        "Toys": "Toys",
         "Bag": "Bags",
         "Make Up": "Makeup",
         "Makeup": "Makeup",
-        "Men'S Apparel": "Men's Apparel",  # fix title() apostrophe issue
+        "Men'S Apparel": "Clothing",
         "Clothes": "Clothing"
     }
-
     df["category"] = df["category"].replace(category_mapping)
+    df["category"] = df["category"].replace("", np.nan)
 
-    # Fill missing or blank categories
-    df["category"] = df["category"].replace("", "Uncategorized").fillna("Uncategorized")
+    # --- Infer correct category based on product name ---
+    def infer_category(name: str) -> str:
+        if not isinstance(name, str):
+            return "Uncategorized"
 
-    # Handle missing descriptions
-    df["description"] = df["description"].replace("", "No description available").fillna("No description available")
+        name_lower = name.lower()
 
-    # Ensure price is numeric
+        if any(x in name_lower for x in ["shoe", "shirt", "pants", "dress", "clothes", "apparel", "jacket", "jeans", "sneaker", "sneakers", "skirt", "gloves", "hat", "coat", "suit", "t-shirt", "shorts", "socks", "scarf"]):
+            return "Clothing"
+        elif any(x in name_lower for x in ["phone", "laptop", "tablet", "charger", "earphone", "headphone", "tv", "camera", "microwave", "fridge", "television", "computer", "console", "smartwatch", "speaker", "monitor", "keyboard", "mouse"]):
+            return "Electronics"
+        elif any(x in name_lower for x in ["toy", "lego", "doll", "figure", "puzzle", "game", "board game", "action figure", "plush", "stuffed animal", "bike", "car", "ball", "chair", "soap", "table"]):
+            return "Toys"
+        elif any(x in name_lower for x in ["bag", "backpack", "wallet", "purse"]):
+            return "Bags"
+        elif any(x in name_lower for x in ["makeup", "lipstick", "foundation", "powder", "blush"]):
+            return "Makeup"
+        elif any(x in name_lower for x in ["watch", "ring", "bracelet", "necklace", "earring", "jewelry", "towels"]):
+            return "Clothing"  # Accessories → Clothing
+        elif any(x in name_lower for x in ["bacon", "cheese", "sausage", "fish", "chicken", "bread", "beef", "egg", "chips", "soda", "snack", "candy", "cookie", "cake", "dessert", "salad", "pizza", "fish", "tuna"]):
+            return "Toys"  # Food → Toys
+        else:
+            return "Uncategorized"
+
+    # --- Apply category inference for all rows ---
+    df["inferred_category"] = df["product_name"].apply(infer_category)
+
+    # Always prioritize inferred category if it’s meaningful
+    df["category"] = np.where(
+        df["inferred_category"] != "Uncategorized",
+        df["inferred_category"],
+        df["category"]
+    )
+
+    df = df.drop(columns=["inferred_category"])
+
+    # --- Final normalization to allowed categories ---
+    allowed_categories = ["Electronics", "Toys", "Bags", "Makeup", "Clothing"]
+    df["category"] = df["category"].apply(
+        lambda c: c if c in allowed_categories else "Uncategorized"
+    )
+
+    # --- Convert numeric and datetime fields ---
     df["price"] = pd.to_numeric(df["price"], errors="coerce")
-
-    # Convert timestamps to datetime
     df["created_at"] = pd.to_datetime(df["created_at"], errors="coerce")
     df["updated_at"] = pd.to_datetime(df["updated_at"], errors="coerce")
 
-    # Remove any remaining duplicates
-    df = df.drop_duplicates(subset=["product_code"], keep="last")
-
-    # Optional: Sort for readability
-    df = df.sort_values(by="product_key")
+    # --- Final clean-up ---
+    df = df.drop_duplicates(subset=["product_code"], keep="first")
+    df = df[df["product_name"].notna() & (df["product_name"].str.len() > 1)]
+    df["category"] = df["category"].fillna("Uncategorized")
+    df = df.sort_values(by="product_key").reset_index(drop=True)
 
     return df
