@@ -1,4 +1,5 @@
 import os
+import pandas as pd
 from dotenv import load_dotenv
 from etl.extract import extract_from_db
 from etl.transform import (
@@ -63,7 +64,24 @@ def dim_product():
     load_to_warehouse(transformed_df, "dim_product")
     
 def dim_date():
-    pass
+    print("\n[DIMENSION] Processing Date Dimension...")
+
+    # Define your date range (you can adjust as needed)
+    start_date = "2020-01-01"
+    end_date = "2030-12-31"
+
+    # Create a DataFrame of all dates within the range
+    date_range = pd.date_range(start=start_date, end=end_date)
+    source_df = pd.DataFrame({'full_date': date_range})
+
+    # Transform into dimension format
+    transformed_df = transform_dim_date(source_df)
+
+    print("--- Transformed dim_date sample ---")
+    print(transformed_df.head())
+
+    # Load into the warehouse
+    load_to_warehouse(transformed_df, "dim_date")
 
 def fact_sales():
     print("\n[FACT] Processing Sales Fact...")
