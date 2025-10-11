@@ -14,7 +14,6 @@ from etl.load import load_to_warehouse
 # load .env
 load_dotenv()
 
-
 def dim_rider(): # Aza WIP
     """Extracts, transforms, and loads the rider dimension."""
     print("\n[DIMENSION] Processing Rider Dimension...")
@@ -48,7 +47,6 @@ def dim_product():
             p.ID,
             p.Name,
             p.Category,
-            p.Description,
             p.ProductCode,
             p.Price,
             p.CreatedAt,
