@@ -4,13 +4,16 @@ from utils.db_connection import get_warehouse_engine
 from queries.product_queries import get_product_data
 from utils.charts import create_bar_chart # Assuming this utility exists
 
-def show_product_view():
+@st.cache_data(ttl=600)
+def load_product_data(_engine):
+    return get_product_data(_engine)
+
+def show_product_view(engine):
     st.title("Product Performance Analytics 🛍️")
 
-    engine = get_warehouse_engine()
     # Assuming get_product_data() joins dim_product with a sales fact table
     # and the resulting DataFrame has columns: 'Name', 'Category', 'Price', 'total_sales'
-    df = get_product_data(engine)
+    df = load_product_data(engine)
 
     st.dataframe(df.head())
 
@@ -78,9 +81,7 @@ def show_product_view():
 
         # --- CHART VISUALIZATION ---
         st.subheader(f"Total Sales by {group_by}")
-        chart = create_bar_chart(agg, group_col, "total_sales", f"Sales by {group_by}")
-        if chart:
-            st.plotly_chart(chart, use_container_width=True)
+        st.bar_chart(agg.set_index(group_col)["total_sales"])   # 🆕 simpler, faster
 
         # --- RAW DATA VIEW ---
         st.subheader("Data View")
