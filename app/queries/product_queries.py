@@ -20,9 +20,12 @@ def get_product_data(_engine: Engine) -> pd.DataFrame:
             fs.quantity,
             dp.product_name,
             dp.category,
-            dp.price
+            dp.price,
+            dd.year,
+            dd.month_name
         FROM fact_sales fs
-        JOIN dim_product dp ON fs.product_key = dp.product_key;
+        JOIN dim_product dp ON fs.product_key = dp.product_key
+        JOIN dim_date dd ON fs.date_key = dd.dateID;
     """
     try:
         # Execute the query and load the result into a pandas DataFrame
