@@ -35,4 +35,4 @@ with tab4:
     rider_view.show_rider_view(engine)
     
 with tab5:
-    date_view.show_date_view()
+    date_view.show_date_view(engine)

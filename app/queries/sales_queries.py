@@ -16,7 +16,7 @@ def get_sales_per_month(_engine: Engine) -> pd.DataFrame:
             dd.month_name,
             SUM(fs.sales_amount) AS total_sales
         FROM fact_sales fs
-        JOIN dim_date dd ON fs.date_key = dd.date_key
+        JOIN dim_date dd ON fs.date_key = dd.dateID -- Corrected This Line
         GROUP BY dd.year, dd.month, dd.month_name
         ORDER BY dd.year, dd.month;
     """
@@ -38,7 +38,7 @@ def get_sales_per_year(_engine: Engine) -> pd.DataFrame:
             dd.year,
             SUM(fs.sales_amount) AS total_sales
         FROM fact_sales fs
-        JOIN dim_date dd ON fs.date_key = dd.date_key
+        JOIN dim_date dd ON fs.date_key = dd.dateID -- Corrected This Line
         GROUP BY dd.year
         ORDER BY dd.year;
     """
@@ -60,7 +60,7 @@ def get_sales_by_day_of_week(_engine: Engine) -> pd.DataFrame:
             dd.day_name,
             SUM(fs.sales_amount) AS total_sales
         FROM fact_sales fs
-        JOIN dim_date dd ON fs.date_key = dd.date_key
+        JOIN dim_date dd ON fs.date_key = dd.dateID -- Corrected This Line
         GROUP BY dd.day_name
         ORDER BY 
             FIELD(dd.day_name, 'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday');
@@ -83,7 +83,7 @@ def get_sales_weekend_vs_weekday(_engine: Engine) -> pd.DataFrame:
             dd.is_weekend,
             SUM(fs.sales_amount) AS total_sales
         FROM fact_sales fs
-        JOIN dim_date dd ON fs.date_key = dd.date_key
+        JOIN dim_date dd ON fs.date_key = dd.dateID -- Corrected This Line
         GROUP BY dd.is_weekend;
     """
     try:
@@ -104,7 +104,7 @@ def get_daily_sales_trend(_engine: Engine) -> pd.DataFrame:
             dd.full_date,
             SUM(fs.sales_amount) AS total_sales
         FROM fact_sales fs
-        JOIN dim_date dd ON fs.date_key = dd.date_key
+        JOIN dim_date dd ON fs.date_key = dd.dateID -- Corrected This Line
         GROUP BY dd.full_date
         ORDER BY dd.full_date;
     """

@@ -1,5 +1,4 @@
 import streamlit as st
-from utils.db_connection import get_warehouse_engine
 import altair as alt
 from queries.sales_queries import (
     get_sales_per_month,
@@ -9,11 +8,7 @@ from queries.sales_queries import (
     get_daily_sales_trend
 )
 
-@st.cache_data(ttl=600)
-def show_date_view():
-    st.title("Date Dimension Analytics")
-
-    engine = get_warehouse_engine()
+def show_date_view(engine):
     st.title("📆 Date-Based Sales Analysis")
     st.caption("Explore how sales vary across time — by day, month, and year.")
 
