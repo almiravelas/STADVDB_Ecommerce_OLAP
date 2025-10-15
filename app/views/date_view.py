@@ -9,7 +9,10 @@ from queries.sales_queries import (
     get_daily_sales_trend
 )
 
+@st.cache_data(ttl=600)
 def show_date_view():
+    st.title("Date Dimension Analytics")
+
     engine = get_warehouse_engine()
     st.title("📆 Date-Based Sales Analysis")
     st.caption("Explore how sales vary across time — by day, month, and year.")

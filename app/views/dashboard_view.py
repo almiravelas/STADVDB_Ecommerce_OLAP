@@ -5,14 +5,17 @@ from utils.charts import create_bar_chart
 import pandas as pd
 
 # WORK IN PROGRESS 
-def show_dashboard():
+@st.cache_data(ttl=600)
+def load_dashboard_data(_engine):
+    return get_sales_with_rider_details(_engine)
+
+def show_dashboard(engine):
     st.title("Dashboard")
 
-    engine = get_warehouse_engine()
     if not engine:
         st.stop()
 
-    df = get_sales_with_rider_details(engine)
+    df = load_dashboard_data(engine)
     if df.empty:
         st.warning("No data found for Rider + Sales join.")
         st.stop()

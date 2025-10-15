@@ -10,14 +10,22 @@ def _calculate_sales_measures(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 def _standardize_sales_date(df: pd.DataFrame) -> pd.DataFrame:
-    print("Standardizing date formats...")
+    """
+    Parses various date formats and converts them to an integer key (YYYYMMDD)
+    to match the dim_date primary key.
+    """
+    print("Standardizing date formats to YYYYMMDD integer key...")
+
+    # 1. Parse various string formats into proper datetime objects
     parsed_dates = df['date_key'].apply(parse_date_formats)
+
+    # 2. Convert datetime objects to a YYYYMMDD string, coercing errors to NaT
+    #    Then convert to a numeric type, which turns NaT into NaN
+    date_keys_numeric = pd.to_numeric(parsed_dates.dt.strftime('%Y%m%d'), errors='coerce')
+
+    # 3. Fill any resulting NaN values with 0 and cast to a non-nullable integer
+    df['date_key'] = date_keys_numeric.fillna(0).astype(int)
     
-    # ✅ Create an integer surrogate key (YYYYMMDD)
-    df['date_key'] = parsed_dates.dt.strftime('%Y%m%d').astype(int)
-    
-    # Also keep a proper date column (for analytics or visualization)
-    df['full_date'] = parsed_dates.dt.date
     return df
 
 def _transform_missing_values(df: pd.DataFrame) -> pd.DataFrame:
@@ -51,10 +59,11 @@ def transform_fact_sales(df: pd.DataFrame) -> pd.DataFrame:
     }, inplace=True)
 
     df = _calculate_sales_measures(df)
-    df = _standardize_sales_date(df)
+    df = _standardize_sales_date(df) # 👈 This function is now updated
     df = _transform_missing_values(df)
 
-    int_columns = ['customer_key', 'product_key', 'rider_key', 'quantity']
+    # Add 'date_key' to the list of columns to be converted to integer
+    int_columns = ['customer_key', 'product_key', 'rider_key', 'date_key', 'quantity'] # 👈 ADDED 'date_key'
     for col in int_columns:
         df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
 
