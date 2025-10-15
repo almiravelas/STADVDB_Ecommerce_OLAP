@@ -12,6 +12,8 @@ st.title("🧡 Shopee Sales Dashboard")
 
 engine = get_warehouse_engine() 
 
+engine = get_warehouse_engine() 
+
 tab1, tab2, tab3, tab4, tab5= st.tabs([
     "Dashboard",
     "Product Analysis",
