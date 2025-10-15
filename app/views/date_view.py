@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 from utils.db_connection import get_warehouse_engine
 
-def show_date_view():
+@st.cache_data(ttl=600)
+def show_date_view(_engine):
     st.title("Date Dimension Analytics")
 
     engine = get_warehouse_engine()

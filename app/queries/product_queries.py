@@ -2,7 +2,7 @@ import pandas as pd
 import streamlit as st
 from sqlalchemy.engine import Engine
 
-@st.cache_data
+@st.cache_data(ttl=600)
 def get_product_data(_engine: Engine) -> pd.DataFrame:
     """
     Queries the data warehouse to get sales data joined with product dimension details.
