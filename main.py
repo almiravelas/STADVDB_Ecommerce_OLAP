@@ -110,7 +110,7 @@ def main():
      dim_rider() 
     # dim_customer()
      dim_product()
-    # dim_date()
+     dim_date()
     
      fact_sales() 
 

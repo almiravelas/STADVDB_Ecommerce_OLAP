@@ -12,7 +12,12 @@ def _calculate_sales_measures(df: pd.DataFrame) -> pd.DataFrame:
 def _standardize_sales_date(df: pd.DataFrame) -> pd.DataFrame:
     print("Standardizing date formats...")
     parsed_dates = df['date_key'].apply(parse_date_formats)
-    df['date_key'] = parsed_dates.dt.strftime('%Y-%m-%d').fillna('NaT')
+    
+    # ✅ Create an integer surrogate key (YYYYMMDD)
+    df['date_key'] = parsed_dates.dt.strftime('%Y%m%d').astype(int)
+    
+    # Also keep a proper date column (for analytics or visualization)
+    df['full_date'] = parsed_dates.dt.date
     return df
 
 def _transform_missing_values(df: pd.DataFrame) -> pd.DataFrame:

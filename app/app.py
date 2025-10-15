@@ -1,5 +1,5 @@
 import streamlit as st
-from views import dashboard_view, rider_view, product_view, user_view
+from views import dashboard_view, rider_view, product_view, user_view, date_view
 
 st.set_page_config(
     page_title="Shopee Sales Dashboard",
@@ -9,11 +9,12 @@ st.set_page_config(
 
 st.title("🧡 Shopee Sales Dashboard")
 
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "Dashboard",
     "Product Analysis",
     "User Analysis",
-    "Rider Performance"
+    "Rider Performance",
+    "Sales Analysis"
 ])
 
 with tab1:
@@ -27,3 +28,5 @@ with tab3:
     
 with tab4:
     rider_view.show_rider_view()
+with tab5:
+    date_view.show_date_view()
