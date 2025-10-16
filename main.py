@@ -36,8 +36,31 @@ def dim_rider(): # Aza WIP
     
     load_to_warehouse(transformed_df, "dim_rider")
 
-def dim_customer():
-    pass
+def dim_user():
+    print("\n[DIMENSION] Processing User Dimension...")
+    # This query gets all columns from your source 'users' table
+    user_query = """
+        SELECT 
+            id,
+            username,
+            firstName,
+            lastName,
+            gender,
+            city,
+            country,
+            createdAt
+        FROM users;
+    """
+    source_df = extract_from_db(user_query)
+    # This calls your transformation logic from dim_user.py
+    transformed_df = transform_dim_user(source_df)
+
+    print("--- Transformed dim_user sample ---")
+    print(transformed_df.head())
+    
+    # This loads the final data into the 'dim_user' table
+    load_to_warehouse(transformed_df, "dim_user")
+
 
 def dim_product():
     print("\n[DIMENSION] Processing Product Dimension...")
@@ -108,7 +131,7 @@ def fact_sales():
 def main():
     # fact and dimensions (uncomment when done)
      dim_rider() 
-    # dim_customer()
+     dim_user()
      dim_product()
      dim_date()
     
