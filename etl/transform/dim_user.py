@@ -1,37 +1,69 @@
 import pandas as pd
 from .utils import standardize_gender, parse_date_formats
 
+
 def transform_dim_user(df: pd.DataFrame) -> pd.DataFrame:
     """Transforms raw user data into a user dimension table."""
     if df is None:
         return None
 
     print("Transforming user data...")
+    df = df.copy()
 
     # rename id to user_key
-    df.rename(columns={'id': 'user_key'}, inplace=True)
+    if 'id' in df.columns:
+        df.rename(columns={'id': 'user_key'}, inplace=True)
+    if 'user_key' not in df.columns:
+        df['user_key'] = df.index + 1
+
+    # ensure required columns exist even when source data is sparse
+    required_defaults = {
+        'username': 'Unknown',
+        'city': 'Unknown',
+        'country': 'Unknown'
+    }
+    for col, default in required_defaults.items():
+        if col not in df.columns:
+            df[col] = default
 
     # standardize gender using shared utility function
-    df['gender'] = standardize_gender(df['gender'])
+    if 'gender' in df.columns:
+        df['gender'] = df['gender'].astype(str)
+        df['gender'] = standardize_gender(df['gender'])
+    else:
+        df['gender'] = 'Other'
 
     # create full_name column
-    df['full_name'] = (df['firstName'].fillna('') + ' ' + df['lastName'].fillna('')).str.strip()
+    first = df['firstName'].fillna('') if 'firstName' in df.columns else pd.Series([''] * len(df), index=df.index)
+    last = df['lastName'].fillna('') if 'lastName' in df.columns else pd.Series([''] * len(df), index=df.index)
+    first = first.astype(str)
+    last = last.astype(str)
+    df['full_name'] = (first + ' ' + last).str.strip()
+    df['full_name'] = df['full_name'].replace('', 'Unknown')
 
     # normalize capitalization for city and country
     for col in ['city', 'country']:
-        if col in df.columns:
-            df[col] = df[col].astype(str).str.title()
+        df[col] = df[col].fillna('Unknown').replace('', 'Unknown')
+        df[col] = df[col].astype(str).str.title()
 
-    # rename createdAt to signup_date
-    if 'createdAt' in df.columns:
+    # rename createdAt to signup_date and normalize the value
+    if 'createdAt' in df.columns and 'signup_date' not in df.columns:
         df.rename(columns={'createdAt': 'signup_date'}, inplace=True)
 
-    # standardize date formats for signup_date
     if 'signup_date' in df.columns:
-        df['signup_date'] = df['signup_date'].apply(parse_date_formats)
+        df['signup_date'] = df['signup_date'].apply(
+            lambda value: parse_date_formats(value) if isinstance(value, str) else pd.to_datetime(value, errors='coerce')
+        )
+    else:
+        df['signup_date'] = pd.NaT
+
+    # drop duplicate user records keeping the latest signup date when available
+    if 'user_key' in df.columns:
+        df.sort_values(by=['user_key', 'signup_date'], inplace=True)
+        df = df.drop_duplicates(subset='user_key', keep='last')
 
     # select final columns for the dimension table
     dim_df = df[['user_key', 'username', 'full_name', 'gender', 'city', 'country', 'signup_date']]
 
     print("User dimension transformed.")
-    return dim_df
+    return dim_df.reset_index(drop=True)

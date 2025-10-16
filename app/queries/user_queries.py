@@ -26,8 +26,8 @@ def get_user_data(_engine: Engine, countries: list = None, cities: list = None, 
         dd.year,
         dd.month_name
     FROM fact_sales fs
-    JOIN dim_user du ON fs.user_key = du.user_key
-    JOIN dim_date dd ON fs.date_key = dd.dateID
+    JOIN dim_user du ON fs.customer_key = du.user_key
+    JOIN dim_date dd ON fs.date_key = dd.date_key
     """
     
     # This part dynamically adds filters to the query for slicing and dicing.

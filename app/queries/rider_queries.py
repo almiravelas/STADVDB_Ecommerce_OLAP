@@ -22,7 +22,7 @@ def get_sales_with_rider_details(_engine: Engine) -> pd.DataFrame:
             dd.month_name 
         FROM fact_sales fs
         JOIN dim_rider dr ON fs.rider_key = dr.rider_key
-        JOIN dim_date dd ON fs.date_key = dd.dateID; 
+        JOIN dim_date dd ON fs.date_key = dd.date_key; 
     """
     try:
         df = pd.read_sql(query, _engine)

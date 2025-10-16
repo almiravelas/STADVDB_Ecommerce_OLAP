@@ -25,7 +25,7 @@ def get_product_data(_engine: Engine) -> pd.DataFrame:
             dd.month_name
         FROM fact_sales fs
         JOIN dim_product dp ON fs.product_key = dp.product_key
-        JOIN dim_date dd ON fs.date_key = dd.dateID;
+        JOIN dim_date dd ON fs.date_key = dd.date_key;
     """
     try:
         # Execute the query and load the result into a pandas DataFrame
