@@ -16,7 +16,6 @@ def transform_dim_user(df: pd.DataFrame) -> pd.DataFrame:
     if 'user_key' not in df.columns:
         df['user_key'] = df.index + 1
 
-    # ensure required columns exist even when source data is sparse
     required_defaults = {
         'username': 'Unknown',
         'city': 'Unknown',
@@ -26,14 +25,14 @@ def transform_dim_user(df: pd.DataFrame) -> pd.DataFrame:
         if col not in df.columns:
             df[col] = default
 
-    # standardize gender using shared utility function
+    # standardize gender
     if 'gender' in df.columns:
         df['gender'] = df['gender'].astype(str)
         df['gender'] = standardize_gender(df['gender'])
     else:
         df['gender'] = 'Other'
 
-    # create full_name column
+    # create full_name
     first = df['firstName'].fillna('') if 'firstName' in df.columns else pd.Series([''] * len(df), index=df.index)
     last = df['lastName'].fillna('') if 'lastName' in df.columns else pd.Series([''] * len(df), index=df.index)
     first = first.astype(str)
@@ -41,12 +40,56 @@ def transform_dim_user(df: pd.DataFrame) -> pd.DataFrame:
     df['full_name'] = (first + ' ' + last).str.strip()
     df['full_name'] = df['full_name'].replace('', 'Unknown')
 
-    # normalize capitalization for city and country
+    # normalize capitalization for city/country
     for col in ['city', 'country']:
         df[col] = df[col].fillna('Unknown').replace('', 'Unknown')
         df[col] = df[col].astype(str).str.title()
 
-    # rename createdAt to signup_date and normalize the value
+    country_to_region = {
+        # Asia
+        'Philippines': 'Asia',
+        'Japan': 'Asia',
+        'China': 'Asia',
+        'India': 'Asia',
+        'Singapore': 'Asia',
+        'South Korea': 'Asia',
+        'Indonesia': 'Asia',
+        'Thailand': 'Asia',
+        'Malaysia': 'Asia',
+        'Vietnam': 'Asia',
+
+        # Europe
+        'United Kingdom': 'Europe',
+        'Germany': 'Europe',
+        'France': 'Europe',
+        'Spain': 'Europe',
+        'Italy': 'Europe',
+        'Netherlands': 'Europe',
+        'Sweden': 'Europe',
+        'Poland': 'Europe',
+
+        # North America
+        'United States': 'North America',
+        'Canada': 'North America',
+        'Mexico': 'North America',
+
+        # Oceania
+        'Australia': 'Oceania',
+        'New Zealand': 'Oceania',
+
+        # South America
+        'Brazil': 'South America',
+        'Argentina': 'South America',
+        'Chile': 'South America',
+
+        # Africa
+        'South Africa': 'Africa',
+        'Nigeria': 'Africa',
+        'Egypt': 'Africa'
+    }
+
+    df['region'] = df['country'].map(country_to_region).fillna('Other')
+
     if 'createdAt' in df.columns and 'signup_date' not in df.columns:
         df.rename(columns={'createdAt': 'signup_date'}, inplace=True)
 
@@ -57,13 +100,11 @@ def transform_dim_user(df: pd.DataFrame) -> pd.DataFrame:
     else:
         df['signup_date'] = pd.NaT
 
-    # drop duplicate user records keeping the latest signup date when available
     if 'user_key' in df.columns:
         df.sort_values(by=['user_key', 'signup_date'], inplace=True)
         df = df.drop_duplicates(subset='user_key', keep='last')
 
-    # select final columns for the dimension table
-    dim_df = df[['user_key', 'username', 'full_name', 'gender', 'city', 'country', 'signup_date']]
+    dim_df = df[['user_key', 'username', 'full_name', 'gender', 'city', 'country', 'region', 'signup_date']]
 
     print("User dimension transformed.")
     return dim_df.reset_index(drop=True)
