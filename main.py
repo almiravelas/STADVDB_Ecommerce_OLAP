@@ -53,7 +53,7 @@ def dim_user():
     source_df = extract_from_db(customer_query)
     transformed_df = transform_dim_user(source_df)
 
-    print("--- Transformed dim_customer sample ---")
+    print("--- Transformed dim_user sample ---")
     print(transformed_df.head())
 
     load_to_warehouse(transformed_df, "dim_user")
