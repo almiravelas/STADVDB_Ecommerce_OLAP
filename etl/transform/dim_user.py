@@ -1,9 +1,8 @@
 import pandas as pd
 from .utils import standardize_gender, parse_date_formats
 
-
 def transform_dim_user(df: pd.DataFrame) -> pd.DataFrame:
-    """Transforms raw user data into a user dimension table."""
+    """Transforms raw user data into a user dimension table with continent mapping."""
     if df is None:
         return None
 
@@ -16,43 +15,35 @@ def transform_dim_user(df: pd.DataFrame) -> pd.DataFrame:
     if 'user_key' not in df.columns:
         df['user_key'] = df.index + 1
 
-    # --- Fill required defaults ---
-    required_defaults = {'username': 'Unknown', 'city': 'Unknown', 'country': 'Unknown'}
-    for col, default in required_defaults.items():
+    # --- Fill missing required fields ---
+    for col in ['username', 'city', 'country']:
         if col not in df.columns:
-            df[col] = default
+            df[col] = 'Unknown'
 
     # --- Standardize gender ---
-    if 'gender' in df.columns:
-        df['gender'] = df['gender'].astype(str)
-        df['gender'] = standardize_gender(df['gender'])
-    else:
-        df['gender'] = 'Other'
+    df['gender'] = standardize_gender(df['gender'].astype(str)) if 'gender' in df.columns else 'Other'
 
-    # --- Create full_name ---
-    first = df['firstName'].fillna('') if 'firstName' in df.columns else pd.Series([''] * len(df), index=df.index)
-    last = df['lastName'].fillna('') if 'lastName' in df.columns else pd.Series([''] * len(df), index=df.index)
-    first = first.astype(str)
-    last = last.astype(str)
-    df['full_name'] = (first + ' ' + last).str.strip().replace('', 'Unknown')
+    # --- Full name ---
+    first = df.get('firstName', '').fillna('')
+    last = df.get('lastName', '').fillna('')
+    df['full_name'] = (first.astype(str) + ' ' + last.astype(str)).str.strip().replace('', 'Unknown')
 
-    # --- Normalize capitalization for city/country ---
+    # --- Normalize capitalization ---
     for col in ['city', 'country']:
-        df[col] = df[col].fillna('Unknown').replace('', 'Unknown')
-        df[col] = df[col].astype(str).str.title()
+        df[col] = df[col].fillna('Unknown').replace('', 'Unknown').astype(str).str.title()
 
-    # --- Expanded country to region mapping ---
-    country_to_region = {
+    # --- Country to continent mapping ---
+    country_to_continent = {
         # Asia
         'Philippines': 'Asia', 'Japan': 'Asia', 'China': 'Asia', 'India': 'Asia',
-        'Singapore': 'Asia', 'South Korea': 'Asia', 'Indonesia': 'Asia', 'Thailand': 'Asia',
-        'Malaysia': 'Asia', 'Vietnam': 'Asia', 'Taiwan': 'Asia', 'Hong Kong': 'Asia',
-        'Pakistan': 'Asia', 'Bangladesh': 'Asia', 'Nepal': 'Asia', 'Sri Lanka': 'Asia',
+        'Singapore': 'Asia', 'South Korea': 'Asia', 'Indonesia': 'Asia',
+        'Thailand': 'Asia', 'Malaysia': 'Asia', 'Vietnam': 'Asia', 'Taiwan': 'Asia',
+        'Hong Kong': 'Asia', 'Pakistan': 'Asia', 'Bangladesh': 'Asia',
 
         # Europe
         'United Kingdom': 'Europe', 'Germany': 'Europe', 'France': 'Europe',
         'Spain': 'Europe', 'Italy': 'Europe', 'Netherlands': 'Europe',
-        'Sweden': 'Europe', 'Poland': 'Europe', 'Norway': 'Europe', 'Switzerland': 'Europe',
+        'Poland': 'Europe', 'Sweden': 'Europe', 'Norway': 'Europe',
 
         # North America
         'United States': 'North America', 'Canada': 'North America', 'Mexico': 'North America',
@@ -62,35 +53,29 @@ def transform_dim_user(df: pd.DataFrame) -> pd.DataFrame:
         'Peru': 'South America', 'Colombia': 'South America',
 
         # Oceania
-        'Australia': 'Oceania', 'New Zealand': 'Oceania', 'Fiji': 'Oceania',
+        'Australia': 'Oceania', 'New Zealand': 'Oceania',
 
         # Africa
-        'South Africa': 'Africa', 'Nigeria': 'Africa', 'Egypt': 'Africa',
-        'Kenya': 'Africa', 'Ghana': 'Africa', 'Morocco': 'Africa'
+        'South Africa': 'Africa', 'Nigeria': 'Africa', 'Egypt': 'Africa', 'Kenya': 'Africa'
     }
 
-    # --- Assign region and rename column ---
-    df['geo_region'] = df['country'].map(country_to_region).fillna('Other')
+    df['continent'] = df['country'].map(country_to_continent).fillna('Other')
 
     # --- Handle signup_date ---
     if 'createdAt' in df.columns and 'signup_date' not in df.columns:
         df.rename(columns={'createdAt': 'signup_date'}, inplace=True)
 
-    if 'signup_date' in df.columns:
-        df['signup_date'] = df['signup_date'].apply(
-            lambda value: parse_date_formats(value) if isinstance(value, str)
-            else pd.to_datetime(value, errors='coerce')
-        )
-    else:
-        df['signup_date'] = pd.NaT
+    df['signup_date'] = df.get('signup_date', pd.NaT)
+    df['signup_date'] = df['signup_date'].apply(
+        lambda x: parse_date_formats(x) if isinstance(x, str) else pd.to_datetime(x, errors='coerce')
+    )
 
     # --- Deduplicate ---
-    if 'user_key' in df.columns:
-        df.sort_values(by=['user_key', 'signup_date'], inplace=True)
-        df = df.drop_duplicates(subset='user_key', keep='last')
+    df.sort_values(by=['user_key', 'signup_date'], inplace=True)
+    df.drop_duplicates(subset='user_key', keep='last', inplace=True)
 
     # --- Final dimension output ---
-    dim_df = df[['user_key', 'username', 'full_name', 'gender', 'city', 'country', 'geo_region', 'signup_date']]
+    dim_df = df[['user_key', 'username', 'full_name', 'gender', 'city', 'country', 'continent', 'signup_date']]
 
     print("User dimension transformed.")
     return dim_df.reset_index(drop=True)
