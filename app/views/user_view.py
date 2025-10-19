@@ -5,9 +5,11 @@ import pandas as pd
 import plotly.express as px
 from views.icons import _inject_icon_css, _icon
 
+
 @st.cache_data(ttl=600)
 def load_user_data(_engine, countries=None, cities=None, genders=None):
     return get_user_data(_engine, countries, cities, genders)
+
 
 def show_user_view(engine):
     _inject_icon_css()
@@ -15,11 +17,12 @@ def show_user_view(engine):
 
     left_col, right_col = st.columns([1, 3])
 
+    # --- Sidebar Filters ---
     with left_col:
         with st.container(border=True):
             _icon("Filters", "filter")
             attributes = get_distinct_user_attributes(engine)
-            
+
             with st.expander("Location Filters", expanded=True):
                 selected_countries = st.multiselect("Country", options=attributes.get("countries", []))
                 selected_cities = st.multiselect("City", options=attributes.get("cities", []))
@@ -29,9 +32,10 @@ def show_user_view(engine):
 
     df = load_user_data(engine, selected_countries, selected_cities, selected_genders)
 
+    # --- Main Content ---
     with right_col:
         if df.empty:
-            st.warning("DATA for the selected filters. Please try a different selection.")
+            st.warning("No data for the selected filters. Please try a different selection.")
             return
 
         # --- KPIs ---
@@ -46,36 +50,100 @@ def show_user_view(engine):
             c2.metric("Unique Customers", f"{unique_users:,}")
             c3.metric("Total Orders", f"{total_orders:,}")
 
-        # --- Visualizations (Roll-up & Drill-down) ---
+        # --- Geographic Analysis ---
         with st.container(border=True):
             _icon("Geographic Sales Analysis", "chart")
+
+            # --- Region-Level Chart ---
+            if 'geo_region' in df.columns:
+                st.markdown("##### Total Sales by Region")
+                sales_by_region = (
+                    df.groupby('geo_region')['sales_amount']
+                    .sum()
+                    .sort_values(ascending=False)
+                    .reset_index()
+                )
+                fig_region = px.bar(
+                    sales_by_region,
+                    x='geo_region',
+                    y='sales_amount',
+                    labels={'sales_amount': 'Total Sales (PHP)', 'geo_region': 'Region'},
+                )
+                st.plotly_chart(fig_region, use_container_width=True)
+
+            # --- Country-Level Chart ---
             st.markdown("##### Total Sales by Country (Roll-up)")
-            sales_by_country = df.groupby('country')['sales_amount'].sum().sort_values(ascending=False).reset_index()
-            fig_country = px.bar(sales_by_country, x='country', y='sales_amount', labels={'sales_amount': 'Total Sales (PHP)'})
+            sales_by_country = (
+                df.groupby('country')['sales_amount']
+                .sum()
+                .sort_values(ascending=False)
+                .reset_index()
+            )
+            fig_country = px.bar(
+                sales_by_country,
+                x='country',
+                y='sales_amount',
+                labels={'sales_amount': 'Total Sales (PHP)'},
+            )
             st.plotly_chart(fig_country, use_container_width=True)
 
+            # --- City-Level Chart ---
             st.markdown("##### Top 15 Cities by Sales (Drill-down)")
-            sales_by_city = df.groupby('city')['sales_amount'].sum().sort_values(ascending=False).head(15).reset_index()
-            fig_city = px.bar(sales_by_city, x='city', y='sales_amount', labels={'sales_amount': 'Total Sales (PHP)'})
+            sales_by_city = (
+                df.groupby('city')['sales_amount']
+                .sum()
+                .sort_values(ascending=False)
+                .head(15)
+                .reset_index()
+            )
+            fig_city = px.bar(
+                sales_by_city,
+                x='city',
+                y='sales_amount',
+                labels={'sales_amount': 'Total Sales (PHP)'},
+            )
             st.plotly_chart(fig_city, use_container_width=True)
 
         # --- Pivot Table ---
         with st.container(border=True):
             _icon("Sales Pivot: Country vs. Gender", "table")
             pivot_table = pd.pivot_table(
-                df, 
-                values='sales_amount', 
-                index='country', 
-                columns='gender', 
-                aggfunc='sum', 
+                df,
+                values='sales_amount',
+                index='country',
+                columns='gender',
+                aggfunc='sum',
                 fill_value=0,
                 margins=True,
                 margins_name="Grand Total"
             )
             st.dataframe(pivot_table.style.format("₱{:,.2f}"), use_container_width=True)
 
-        # --- Raw Data Expander ---
+        # --- Aggregated Summary (Binned View) ---
         with st.container(border=True):
-            with st.expander("View Filtered Raw Data"):
-                st.dataframe(df, use_container_width=True)
+            with st.expander("View Aggregated Summary (Binned)"):
+                st.markdown("Aggregate large datasets into summarized bins to avoid loading issues.")
+                bin_level = st.selectbox(
+                    "Group data by:",
+                    ['geo_region', 'country', 'city'],
+                    help="Choose how to group the summarized view"
+                )
 
+                summary = (
+                    df.groupby(bin_level)
+                    .agg(
+                        users=('user_key', 'nunique'),
+                        total_sales=('sales_amount', 'sum'),
+                        total_orders=('order_number', 'nunique')
+                    )
+                    .reset_index()
+                    .sort_values('total_sales', ascending=False)
+                )
+
+                st.dataframe(summary, use_container_width=True)
+
+        with st.container(border=True):
+            with st.expander("Sample of Filtered Raw Data"):
+                max_rows = 1000
+                st.info(f"Showing random sample of up to {max_rows:,} rows.")
+                st.dataframe(df.sample(n=min(max_rows, len(df)), random_state=42), use_container_width=True)
