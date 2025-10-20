@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text  # <-- 1. IMPORT 'text'
 
 def load_to_warehouse(df: pd.DataFrame, table_name: str):
     if df is None:
@@ -24,12 +24,22 @@ def load_to_warehouse(df: pd.DataFrame, table_name: str):
         try:
             print(f"Loading data into table '{table_name}' in warehouse '{warehouse_db_name}'...")
             
+            # --- 2. ADD THIS LOGIC BLOCK ---
+            # This logic preserves your partitions for fact_sales
+            if table_name == 'fact_sales':
+                print(f"Truncating '{table_name}' to preserve partitions...")
+                connection.execute(text(f"TRUNCATE TABLE {table_name}"))
+                if_exists_strategy = 'append'
+            else:
+                # Dimensions can be fully replaced
+                if_exists_strategy = 'replace'
+            # --- END OF BLOCK ---
+
             df.to_sql(
                 table_name,
                 connection,
-                if_exists='replace',
+                if_exists=if_exists_strategy,  # <-- 3. USE THE VARIABLE
                 index=False,
-                # added this to process the data in batches of 50,000 rows (WIP)
                 chunksize=50000 
             )
             

@@ -3,7 +3,9 @@ import pandas as pd
 import plotly.express as px
 
 from utils.db_connection import get_warehouse_engine  # noqa: F401 (compat)
-from queries.rider_queries import get_sales_with_rider_details
+# --- MODIFIED IMPORT ---
+from queries.rider_queries import get_sales_for_dashboard
+# --- END MODIFICATION ---
 from queries.product_queries import get_product_data
 from utils.charts import create_bar_chart
 from views.icons import _inject_icon_css, _icon, ORANGE
@@ -121,22 +123,35 @@ def _center_title(fig, size=16):
 # =========================
 @st.cache_data(ttl=600)
 def load_dashboard_data(_engine):
-    """Loads and preprocesses rider sales data for the dashboard."""
-    df = get_sales_with_rider_details(_engine)
+    """
+    Loads and preprocesses rider sales data for the dashboard
+    using the optimized dashboard-specific query.
+    Returns a tuple (DataFrame, duration).
+    """
+    # --- MODIFIED LOGIC ---
+    # This now returns (df, duration)
+    df, duration = get_sales_for_dashboard(_engine)
+    # --- END MODIFICATION ---
     if not df.empty:
         df = _ensure_quarter(df)
-    return df
+    return df, duration  # Return both
 
 @st.cache_data(ttl=600)
 def load_product_preview_data(_engine):
-    """Loads product sales data for the dashboard preview."""
+    """
+    Loads product sales data for the dashboard preview.
+    Returns a tuple (DataFrame, duration).
+    """
     try:
-        df = get_product_data(_engine)
+        # --- MODIFICATION: Assume get_product_data is also modified ---
+        df, duration = get_product_data(_engine)
+        # --- END MODIFICATION ---
     except Exception:
-        return pd.DataFrame()
+        return pd.DataFrame(), 0.0
+        
     if not df.empty:
         df = _ensure_quarter(df)
-    return df
+    return df, duration # Return both
 
 # =========================
 # MAIN VIEW
@@ -150,8 +165,10 @@ def show_dashboard(engine):
     _inject_extra_css()   # local patch
     _icon("Main Dashboard", "dashboard", is_title=True)
 
-    df_rider = load_dashboard_data(engine)
-    df_product = load_product_preview_data(engine)
+    # --- MODIFICATION: Unpack tuples ---
+    df_rider, rider_duration = load_dashboard_data(engine)
+    df_product, product_duration = load_product_preview_data(engine)
+    # --- END MODIFICATION ---
 
     if df_rider is None or df_rider.empty:
         st.warning("No sales data available to display on the dashboard.")
@@ -163,6 +180,11 @@ def show_dashboard(engine):
     with left_col:
         with st.container(border=True):
             _icon("Time Horizon", "calendar")
+            
+            # --- MODIFICATION: Display query times ---
+            st.caption(f"Rider data query: {rider_duration:.4f} s")
+            st.caption(f"Product data query: {product_duration:.4f} s")
+            # --- END MODIFICATION ---
 
             years = sorted(df_rider["year"].dropna().unique(), reverse=True)
             year_sel = st.multiselect("Year", years, default=years)
@@ -187,8 +209,12 @@ def show_dashboard(engine):
                 total_sales = filtered_df_rider_for_metrics["sales_amount"].sum() if "sales_amount" in filtered_df_rider_for_metrics.columns else None
                 total_orders = (filtered_df_rider_for_metrics["order_number"].nunique()
                                 if "order_number" in filtered_df_rider_for_metrics.columns else None)
-                total_riders = (filtered_df_rider_for_metrics["rider_name"].nunique()
-                                if "rider_name" in filtered_df_rider_for_metrics.columns else None)
+                
+                # --- MODIFIED LOGIC (already present) ---
+                rider_key_col = "rider_key" if "rider_key" in filtered_df_rider_for_metrics.columns else "rider_name"
+                total_riders = (filtered_df_rider_for_metrics[rider_key_col].nunique()
+                                if rider_key_col in filtered_df_rider_for_metrics.columns else None)
+                # --- END MODIFICATION ---
 
                 c1, c2, c3 = st.columns(3)
                 c1.metric("Total Sales", f"₱{_format_compact(total_sales)}")
@@ -235,7 +261,6 @@ def show_dashboard(engine):
             )
 
             if monthly_sales.empty:
-                # show a friendly message; do NOT render a chart or write(None)
                 st.caption("No monthly trend points for the selected period.")
             else:
                 fig_line = px.line(
