@@ -17,9 +17,9 @@ engine = get_warehouse_engine()
 tab1, tab2, tab3, tab4, tab5= st.tabs([
     "Dashboard",
     "Product Analysis",
-    "User Analysis",
     "Rider Performance",
-    "Date Analysis"
+    "Date Analysis",
+    "User Analysis"
 ])
 
 with tab1:
@@ -29,10 +29,10 @@ with tab2:
     product_view.show_product_view(engine)
 
 with tab3:
-    user_view.show_user_view(engine)
-    
-with tab4:
     rider_view.show_rider_view(engine)
     
-with tab5:
+with tab4:
     date_view.show_date_view(engine)
+    
+with tab5:
+    user_view.show_user_view(engine)
