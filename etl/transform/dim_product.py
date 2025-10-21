@@ -62,10 +62,6 @@ def transform_dim_product(df: pd.DataFrame) -> pd.DataFrame:
             return "Electronics"
         elif any(x in name_lower for x in ["toy", "lego", "doll", "figure", "puzzle", "game", "board game", "action figure", "plush", "stuffed animal", "bike", "car", "ball", "chair", "soap", "table"]):
             return "Toys"
-        elif any(x in name_lower for x in ["bag", "backpack", "wallet", "purse"]):
-            return "Bags"
-        elif any(x in name_lower for x in ["makeup", "lipstick", "foundation", "powder", "blush"]):
-            return "Makeup"
         elif any(x in name_lower for x in ["watch", "ring", "bracelet", "necklace", "earring", "jewelry", "towels"]):
             return "Clothing"  # Accessories → Clothing
         elif any(x in name_lower for x in ["bacon", "cheese", "sausage", "fish", "chicken", "bread", "beef", "egg", "chips", "soda", "snack", "candy", "cookie", "cake", "dessert", "salad", "pizza", "fish", "tuna"]):
