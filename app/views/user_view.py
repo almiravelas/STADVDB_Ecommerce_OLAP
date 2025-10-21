@@ -5,10 +5,6 @@ import pandas as pd
 import plotly.express as px
 from views.icons import _inject_icon_css, _icon
 
-@st.cache_data(ttl=600)
-def load_user_data(_engine, countries=None, cities=None, genders=None):
-    return get_user_data(_engine, countries, cities, genders)
-
 def show_user_view(engine):
     _inject_icon_css()
     _icon("User Demographics & Behavior Analysis", "user", is_title=True)
@@ -29,11 +25,10 @@ def show_user_view(engine):
             with st.expander("Demographic Filters", expanded=True):
                 selected_genders = st.multiselect("Gender", options=attributes.get("genders", []))
 
-    df = load_user_data(engine, selected_countries, selected_cities, selected_genders)
-
-    # Apply continent filter client-side
-    if selected_continents and "continent" in df.columns:
-        df = df[df["continent"].isin(selected_continents)]
+    # --- OPTIMIZATION: Pass ALL filters to the data query function ---
+    df = get_user_data(
+        engine, selected_continents, selected_countries, selected_cities, selected_genders
+    )
 
     # --- Main content ---
     with right_col:
@@ -85,14 +80,20 @@ def show_user_view(engine):
         # Aggregated Summary (Binned)
         with st.container(border=True):
             with st.expander("Aggregated Summary (Binned)"):
-                bin_level = st.selectbox("Group data by:", ["continent", "country", "city"])
-                summary = (
-                    df.groupby(bin_level)
-                    .agg(users=("user_key", "nunique"), total_sales=("sales_amount", "sum"))
-                    .reset_index()
-                    .sort_values("total_sales", ascending=False)
-                )
-                st.dataframe(summary, use_container_width=True)
+                # Make sure bin_level options are valid
+                valid_bins = [col for col in ["continent", "country", "city"] if col in df.columns]
+                if valid_bins:
+                    bin_level = st.selectbox("Group data by:", valid_bins)
+                    summary = (
+                        df.groupby(bin_level)
+                        .agg(users=("user_key", "nunique"), total_sales=("sales_amount", "sum"))
+                        .reset_index()
+                        .sort_values("total_sales", ascending=False)
+                    )
+                    st.dataframe(summary, use_container_width=True)
+                else:
+                    st.warning("No valid columns available for grouping.")
+
 
         # Raw sample (safe display)
         with st.container(border=True):
