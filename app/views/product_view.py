@@ -6,6 +6,7 @@ from utils.charts import create_bar_chart # Assuming this utility exists
 
 @st.cache_data(ttl=600)
 def load_product_data(_engine):
+    # This function returns (df, duration)
     return get_product_data(_engine)
 
 def show_product_view(engine):
@@ -13,9 +14,12 @@ def show_product_view(engine):
 
     # Assuming get_product_data() joins dim_product with a sales fact table
     # and the resulting DataFrame has columns: 'Name', 'Category', 'Price', 'total_sales'
-    df = load_product_data(engine)
+    
+    # --- FIX: Unpack the (df, duration) tuple ---
+    df, duration = load_product_data(engine)
+    # --- END FIX ---
 
-    st.dataframe(df.head())
+    st.dataframe(df.head()) # This will work now
 
     if df.empty:
         st.warning("No product data available.")
@@ -27,7 +31,11 @@ def show_product_view(engine):
     # --- FILTERS (for Slice and Dice) ---
     with left_col:
         st.subheader("Filters")
-
+        
+        # --- (Optional) Add the duration caption for consistency ---
+        st.caption(f"Data load time: {duration:.4f} seconds")
+        # ---
+        
         # Filter by Product Category using the 'Category' column
         categories = sorted(df["category"].unique())
         category_sel = st.multiselect("category", categories, default=categories)

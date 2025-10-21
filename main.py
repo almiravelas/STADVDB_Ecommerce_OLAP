@@ -35,7 +35,7 @@ def dim_rider(): # Aza WIP
     
     load_to_warehouse(transformed_df, "dim_rider")
 
-def dim_customer():
+def dim_user():
     print("\n[DIMENSION] Processing Customer/User Dimension...")
 
     customer_query = """
@@ -53,7 +53,7 @@ def dim_customer():
     source_df = extract_from_db(customer_query)
     transformed_df = transform_dim_user(source_df)
 
-    print("--- Transformed dim_customer sample ---")
+    print("--- Transformed dim_user sample ---")
     print(transformed_df.head())
 
     load_to_warehouse(transformed_df, "dim_user")
@@ -127,7 +127,7 @@ def fact_sales():
 def main():
     # fact and dimensions (uncomment when done)
     dim_rider()
-    dim_customer()
+    dim_user()
     dim_product()
     dim_date()
 

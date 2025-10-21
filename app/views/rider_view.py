@@ -7,7 +7,12 @@ from views.icons import _inject_icon_css, _icon
 
 @st.cache_data(ttl=600)
 def load_rider_data(_engine):
-    """Loads rider and sales data from the database, caching the result."""
+    """
+    Loads rider and sales data from the database, caching the result.
+    This view uses the DETAILED query.
+    Returns a tuple (DataFrame, duration).
+    """
+    # This function now returns (df, duration)
     return get_sales_with_rider_details(_engine)
 
 # --- Quarter helpers ---
@@ -56,7 +61,10 @@ def show_rider_view(engine):
 
     _icon("Rider Performance Analytics", "truck", is_title=True)
 
-    df = load_rider_data(engine)
+    # --- MODIFICATION: Unpack the tuple ---
+    df, duration = load_rider_data(engine)
+    # --- END MODIFICATION ---
+
     if df.empty:
         st.warning("No rider data available.")
         return
@@ -68,6 +76,10 @@ def show_rider_view(engine):
     with left_col:
         with st.container(border=True):
             _icon("Filters", "filter")
+
+            # --- MODIFICATION: Display the query time ---
+            st.caption(f"Data load time: {duration:.4f} seconds")
+            # --- END MODIFICATION ---
 
             with st.expander("Date Filters", expanded=True):
                 _icon("Date Filters", "calendar")
@@ -148,7 +160,12 @@ def show_rider_view(engine):
                 if not agg.empty:
                     best, worst = agg.iloc[0], agg.iloc[-1]
                     c1, c2, c3 = st.columns(3)
-                    c1.metric("Total Riders", len(filtered_df["rider_name"].dropna().unique()))
+                    
+                    # --- MODIFIED LOGIC (already present) ---
+                    rider_key_col = "rider_key" if "rider_key" in filtered_df.columns else "rider_name"
+                    c1.metric("Total Riders", filtered_df[rider_key_col].nunique())
+                    # --- END MODIFICATION ---
+                    
                     c2.metric("Top Performer", best[group_col] if pd.notna(best[group_col]) else "—")
                     c3.metric("Lowest Performer", worst[group_col] if pd.notna(worst[group_col]) else "—")
                 else:
@@ -184,8 +201,8 @@ def show_rider_view(engine):
         with st.container(border=True):
             _icon("Data View", "data")
             if len(filtered_df) > 1000:
-                st.info(f"Displaying the first 1,000 rows out of {len(filtered_df):,} total rows.")
-                st.dataframe(filtered_df.head(1000), use_container_width=True, height=400)
+                st.info(f"Displaying the first 50 rows out of {len(filtered_df):,} total rows.")
+                st.dataframe(filtered_df.head(50), use_container_width=True, height=400)
             elif filtered_df.empty:
                 st.info("No data to display for the current filter selection.")
             else:

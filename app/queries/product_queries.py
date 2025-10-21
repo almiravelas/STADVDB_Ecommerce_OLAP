@@ -19,7 +19,7 @@ def get_product_data(_engine: Engine, years: Optional[List[int]] = None) -> pd.D
     """
     # Return an empty DataFrame if no database connection is provided
     if _engine is None:
-        return pd.DataFrame()
+        return pd.DataFrame(), 0.0  # <-- Return tuple
 
     # Base SQL query
     query = """
@@ -45,6 +45,9 @@ def get_product_data(_engine: Engine, years: Optional[List[int]] = None) -> pd.D
     query += ";" # End the query
 
     try:
+        # --- MODIFICATION: Start timer ---
+        start_time = time.perf_counter() # <-- Add timer start
+        
         # Execute the query and load the result into a pandas DataFrame
         # Using 'params' helps prevent SQL injection
         df = pd.read_sql(query, _engine, params=params)
