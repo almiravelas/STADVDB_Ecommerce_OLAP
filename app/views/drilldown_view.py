@@ -4,11 +4,13 @@ Drill-down View - Disaggregation to lower levels of granularity
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from queries.olap_queries import (
+from queries.drilldown_queries import (
     drilldown_year_to_month,
     drilldown_category_to_product,
     drilldown_month_to_day,
-    drilldown_courier_to_vehicle,
+    drilldown_courier_to_vehicle
+)
+from queries.helper_queries import (
     get_available_years,
     get_available_categories,
     get_available_couriers

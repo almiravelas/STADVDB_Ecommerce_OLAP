@@ -4,7 +4,7 @@ Roll-up View - Aggregation to higher levels of granularity
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from queries.olap_queries import (
+from queries.rollup_queries import (
     rollup_sales_by_year,
     rollup_sales_by_quarter,
     rollup_sales_by_category,

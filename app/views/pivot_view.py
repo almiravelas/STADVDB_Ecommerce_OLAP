@@ -5,7 +5,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from queries.olap_queries import (
+from queries.pivot_queries import (
     pivot_category_by_month,
     pivot_city_by_category,
     pivot_year_by_quarter

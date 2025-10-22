@@ -4,11 +4,13 @@ Slice View - Selecting a single dimension value
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from queries.olap_queries import (
+from queries.slice_queries import (
     slice_by_year,
     slice_by_category,
     slice_by_city,
-    slice_by_courier,
+    slice_by_courier
+)
+from queries.helper_queries import (
     get_available_years,
     get_available_categories,
     get_available_cities,

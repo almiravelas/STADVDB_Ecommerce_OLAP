@@ -4,8 +4,8 @@ Dice View - Selecting multiple dimension values
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from queries.olap_queries import (
-    dice_multi_dimension,
+from queries.dice_queries import dice_multi_dimension
+from queries.helper_queries import (
     get_available_years,
     get_available_categories,
     get_available_cities,
