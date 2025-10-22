@@ -305,8 +305,8 @@ def slice_by_city(_engine: Engine, city: str) -> tuple[pd.DataFrame, float]:
 # ============================================================================
 
 @st.cache_data(ttl=600)
-def dice_multi_dimension(_engine: Engine, years: list, categories: list, cities: list) -> tuple[pd.DataFrame, float]:
-    """Dice data across multiple dimensions"""
+def dice_multi_dimension(_engine: Engine, years: list, categories: list, cities: list, couriers: list = None) -> tuple[pd.DataFrame, float]:
+    """Dice data across multiple dimensions including rider/courier"""
     if _engine is None:
         return pd.DataFrame(), 0.0
     
@@ -321,6 +321,9 @@ def dice_multi_dimension(_engine: Engine, years: list, categories: list, cities:
     if cities:
         city_list = ','.join([f"'{c}'" for c in cities])
         where_clauses.append(f"du.city IN ({city_list})")
+    if couriers:
+        courier_list = ','.join([f"'{c}'" for c in couriers])
+        where_clauses.append(f"dr.courier_name IN ({courier_list})")
     
     where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
     
@@ -331,6 +334,8 @@ def dice_multi_dimension(_engine: Engine, years: list, categories: list, cities:
             dp.category,
             dp.product_name,
             du.city AS user_city,
+            dr.courier_name,
+            dr.vehicleType,
             SUM(fs.sales_amount) AS total_sales,
             SUM(fs.quantity) AS total_quantity,
             COUNT(DISTINCT fs.order_number) AS total_orders
@@ -338,8 +343,9 @@ def dice_multi_dimension(_engine: Engine, years: list, categories: list, cities:
         JOIN dim_date dd ON fs.date_key = dd.date_key
         JOIN dim_product dp ON fs.product_key = dp.product_key
         JOIN dim_user du ON fs.customer_key = du.user_key
+        JOIN dim_rider dr ON fs.rider_key = dr.rider_key
         WHERE {where_sql}
-        GROUP BY dd.year, dd.month_name, dp.category, dp.product_name, du.city
+        GROUP BY dd.year, dd.month_name, dp.category, dp.product_name, du.city, dr.courier_name, dr.vehicleType
         ORDER BY total_sales DESC
         LIMIT 1000;
     """
@@ -447,16 +453,17 @@ def pivot_year_by_quarter(_engine: Engine) -> tuple[pd.DataFrame, float]:
 
 @st.cache_data(ttl=600)
 def get_available_years(_engine: Engine) -> list:
-    """Get list of available years"""
+    """Get list of available years (filtered to 2024 and 2025 only)"""
     if _engine is None:
         return []
     
-    query = "SELECT DISTINCT year FROM dim_date ORDER BY year"
+    query = "SELECT DISTINCT year FROM dim_date WHERE year IN (2024, 2025) ORDER BY year"
     try:
         df = pd.read_sql(query, _engine)
         return df['year'].tolist()
     except Exception as e:
         st.error(f"Failed to get years: {e}")
+        return []
         return []
 
 
@@ -488,3 +495,133 @@ def get_available_cities(_engine: Engine) -> list:
     except Exception as e:
         st.error(f"Failed to get cities: {e}")
         return []
+
+
+@st.cache_data(ttl=600)
+def get_available_couriers(_engine: Engine) -> list:
+    """Get list of available courier companies"""
+    if _engine is None:
+        return []
+    
+    query = "SELECT DISTINCT courier_name FROM dim_rider ORDER BY courier_name"
+    try:
+        df = pd.read_sql(query, _engine)
+        return df['courier_name'].tolist()
+    except Exception as e:
+        st.error(f"Failed to get couriers: {e}")
+        return []
+
+
+@st.cache_data(ttl=600)
+def get_available_vehicle_types(_engine: Engine) -> list:
+    """Get list of available vehicle types"""
+    if _engine is None:
+        return []
+    
+    query = "SELECT DISTINCT vehicleType FROM dim_rider ORDER BY vehicleType"
+    try:
+        df = pd.read_sql(query, _engine)
+        return df['vehicleType'].tolist()
+    except Exception as e:
+        st.error(f"Failed to get vehicle types: {e}")
+        return []
+
+
+# ============================================================================
+# RIDER DIMENSION OLAP OPERATIONS
+# ============================================================================
+
+@st.cache_data(ttl=600)
+def rollup_sales_by_courier(_engine: Engine) -> tuple[pd.DataFrame, float]:
+    """Roll up sales data to courier level"""
+    if _engine is None:
+        return pd.DataFrame(), 0.0
+    
+    query = """
+        SELECT 
+            dr.courier_name,
+            COUNT(DISTINCT fs.order_number) AS total_orders,
+            SUM(fs.sales_amount) AS total_sales,
+            SUM(fs.quantity) AS total_quantity,
+            AVG(fs.sales_amount) AS avg_order_value,
+            COUNT(DISTINCT dr.rider_key) AS rider_count
+        FROM fact_sales fs
+        JOIN dim_rider dr ON fs.rider_key = dr.rider_key
+        GROUP BY dr.courier_name
+        ORDER BY total_sales DESC;
+    """
+    try:
+        start_time = time.perf_counter()
+        df = pd.read_sql(query, _engine)
+        duration = time.perf_counter() - start_time
+        return df, duration
+    except Exception as e:
+        st.error(f"Failed to execute courier roll-up query: {e}")
+        return pd.DataFrame(), 0.0
+
+
+@st.cache_data(ttl=600)
+def drilldown_courier_to_vehicle(_engine: Engine, courier: str) -> tuple[pd.DataFrame, float]:
+    """Drill down from courier to vehicle type level"""
+    if _engine is None:
+        return pd.DataFrame(), 0.0
+    
+    query = """
+        SELECT 
+            dr.vehicleType,
+            COUNT(DISTINCT fs.order_number) AS total_orders,
+            SUM(fs.sales_amount) AS total_sales,
+            SUM(fs.quantity) AS total_quantity,
+            AVG(fs.sales_amount) AS avg_order_value,
+            COUNT(DISTINCT dr.rider_key) AS rider_count
+        FROM fact_sales fs
+        JOIN dim_rider dr ON fs.rider_key = dr.rider_key
+        WHERE dr.courier_name = :courier
+        GROUP BY dr.vehicleType
+        ORDER BY total_sales DESC;
+    """
+    try:
+        start_time = time.perf_counter()
+        df = pd.read_sql(query, _engine, params={'courier': courier})
+        duration = time.perf_counter() - start_time
+        return df, duration
+    except Exception as e:
+        st.error(f"Failed to execute courier drill-down query: {e}")
+        return pd.DataFrame(), 0.0
+
+
+@st.cache_data(ttl=600)
+def slice_by_courier(_engine: Engine, courier: str) -> tuple[pd.DataFrame, float]:
+    """Slice data by a specific courier"""
+    if _engine is None:
+        return pd.DataFrame(), 0.0
+    
+    query = """
+        SELECT 
+            dd.year,
+            dd.month_name,
+            dp.category,
+            du.city,
+            dr.vehicleType,
+            COUNT(DISTINCT fs.order_number) AS total_orders,
+            SUM(fs.sales_amount) AS total_sales,
+            SUM(fs.quantity) AS total_quantity,
+            AVG(fs.sales_amount) AS avg_order_value
+        FROM fact_sales fs
+        JOIN dim_rider dr ON fs.rider_key = dr.rider_key
+        JOIN dim_date dd ON fs.date_key = dd.date_key
+        JOIN dim_product dp ON fs.product_key = dp.product_key
+        JOIN dim_user du ON fs.customer_key = du.user_key
+        WHERE dr.courier_name = :courier
+        GROUP BY dd.year, dd.month_name, dp.category, du.city, dr.vehicleType
+        ORDER BY dd.year, dd.month_name, total_sales DESC;
+    """
+    try:
+        start_time = time.perf_counter()
+        df = pd.read_sql(query, _engine, params={'courier': courier})
+        duration = time.perf_counter() - start_time
+        return df, duration
+    except Exception as e:
+        st.error(f"Failed to execute courier slice query: {e}")
+        return pd.DataFrame(), 0.0
+

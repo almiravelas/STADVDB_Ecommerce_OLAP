@@ -8,9 +8,11 @@ from queries.olap_queries import (
     slice_by_year,
     slice_by_category,
     slice_by_city,
+    slice_by_courier,
     get_available_years,
     get_available_categories,
-    get_available_cities
+    get_available_cities,
+    get_available_couriers
 )
 
 
@@ -58,7 +60,7 @@ def show_slice_view(engine):
     # Select slice dimension
     slice_option = st.selectbox(
         "Select Dimension to Slice:",
-        ["Time: By Year", "Product: By Category", "Location: By City"],
+        ["Time: By Year", "Product: By Category", "Location: By City", "Rider: By Courier"],
         key="slice_dimension"
     )
     
@@ -70,6 +72,8 @@ def show_slice_view(engine):
         show_category_slice(engine)
     elif slice_option == "Location: By City":
         show_city_slice(engine)
+    elif slice_option == "Rider: By Courier":
+        show_courier_slice(engine)
 
 
 def show_year_slice(engine):
@@ -401,6 +405,134 @@ def show_city_slice(engine):
     with st.expander("View Detailed Slice Data (First 100 rows)"):
         display_df = df.head(100).copy()
         display_df['total_sales'] = display_df['total_sales'].apply(lambda x: f"₱{x:,.2f}")
+        display_df['total_orders'] = display_df['total_orders'].apply(lambda x: f"{x:,}")
+        display_df['total_quantity'] = display_df['total_quantity'].apply(lambda x: f"{x:,}")
+        st.dataframe(display_df, use_container_width=True, hide_index=True)
+
+
+def show_courier_slice(engine):
+    st.subheader(" Slice by Courier")
+    st.caption("Fix the courier dimension to view data for a specific delivery service")
+    
+    # Get available couriers
+    couriers = get_available_couriers(engine)
+    if not couriers:
+        st.warning("No courier data available.")
+        return
+    
+    # Select courier to slice
+    selected_courier = st.selectbox(
+        "Select Courier:",
+        couriers,
+        key="slice_courier"
+    )
+    
+    if not selected_courier:
+        return
+    
+    st.divider()
+    
+    # Execute slice query
+    df, duration = slice_by_courier(engine, selected_courier)
+    
+    if df.empty:
+        st.warning(f"No data available for courier: {selected_courier}")
+        return
+    
+    st.info(f"Query executed in {duration:.4f} seconds")
+    st.success(f"Showing all data for courier: **{selected_courier}**")
+    
+    # Display summary metrics
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total Sales", f"{df['total_sales'].sum():,.2f}")
+    with col2:
+        st.metric("Total Orders", f"{df['total_orders'].sum():,}")
+    with col3:
+        st.metric("Total Quantity", f"{df['total_quantity'].sum():,}")
+    with col4:
+        st.metric("Avg Order Value", f"{df['avg_order_value'].mean():,.2f}")
+    
+    # Multi-dimensional analysis
+    st.subheader("Multi-Dimensional Analysis")
+    
+    # By vehicle type
+    st.markdown("**By Vehicle Type**")
+    vehicle_summary = df.groupby('vehicleType').agg({
+        'total_sales': 'sum',
+        'total_orders': 'sum',
+        'total_quantity': 'sum'
+    }).reset_index().sort_values('total_sales', ascending=False)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        fig = px.bar(
+            vehicle_summary,
+            x='vehicleType',
+            y='total_sales',
+            text='total_sales',
+            labels={'vehicleType': 'Vehicle Type', 'total_sales': 'Total Sales ()'},
+            color='total_sales',
+            color_continuous_scale='blues'
+        )
+        fig.update_traces(texttemplate='%{text:,.0f}', textposition='outside')
+        fig.update_layout(showlegend=False)
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        fig = px.pie(
+            vehicle_summary,
+            values='total_sales',
+            names='vehicleType',
+            hole=0.4,
+            color_discrete_sequence=px.colors.sequential.Blues_r
+        )
+        fig.update_traces(textposition='inside', textinfo='percent+label')
+        st.plotly_chart(fig, use_container_width=True)
+    
+    # By category
+    st.markdown("**By Category**")
+    category_summary = df.groupby('category').agg({
+        'total_sales': 'sum',
+        'total_orders': 'sum'
+    }).reset_index().sort_values('total_sales', ascending=False).head(10)
+    
+    fig = px.bar(
+        category_summary,
+        y='category',
+        x='total_sales',
+        orientation='h',
+        text='total_sales',
+        labels={'category': 'Category', 'total_sales': 'Total Sales ()'},
+        color='total_sales',
+        color_continuous_scale='blues'
+    )
+    fig.update_traces(texttemplate='%{text:,.0f}', textposition='outside')
+    fig.update_layout(showlegend=False, yaxis={'categoryorder': 'total ascending'})
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # By year
+    st.markdown("**By Year**")
+    year_summary = df.groupby('year').agg({
+        'total_sales': 'sum',
+        'total_orders': 'sum'
+    }).reset_index().sort_values('year')
+    
+    fig = px.line(
+        year_summary,
+        x='year',
+        y='total_sales',
+        markers=True,
+        labels={'year': 'Year', 'total_sales': 'Total Sales ()'},
+        text='total_sales'
+    )
+    fig.update_traces(texttemplate='%{text:,.0f}', textposition='top center', line_color='#2196F3')
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Detailed data
+    with st.expander("View Detailed Slice Data (First 100 rows)"):
+        display_df = df.head(100).copy()
+        display_df['total_sales'] = display_df['total_sales'].apply(lambda x: f"{x:,.2f}")
         display_df['total_orders'] = display_df['total_orders'].apply(lambda x: f"{x:,}")
         display_df['total_quantity'] = display_df['total_quantity'].apply(lambda x: f"{x:,}")
         st.dataframe(display_df, use_container_width=True, hide_index=True)

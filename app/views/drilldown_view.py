@@ -8,8 +8,10 @@ from queries.olap_queries import (
     drilldown_year_to_month,
     drilldown_category_to_product,
     drilldown_month_to_day,
+    drilldown_courier_to_vehicle,
     get_available_years,
-    get_available_categories
+    get_available_categories,
+    get_available_couriers
 )
 
 
@@ -57,7 +59,7 @@ def show_drilldown_view(engine):
     # Select drill-down dimension
     drilldown_option = st.selectbox(
         "Select Drill-down Path:",
-        ["Time: Year → Month", "Time: Month → Day", "Product: Category → Product"],
+        ["Time: Year → Month", "Time: Month → Day", "Product: Category → Product", "Rider: Courier → Vehicle Type"],
         key="drilldown_dimension"
     )
     
@@ -69,6 +71,8 @@ def show_drilldown_view(engine):
         show_month_to_day_drilldown(engine)
     elif drilldown_option == "Product: Category → Product":
         show_category_to_product_drilldown(engine)
+    elif drilldown_option == "Rider: Courier → Vehicle Type":
+        show_courier_to_vehicle_drilldown(engine)
 
 
 def show_year_to_month_drilldown(engine):
@@ -308,4 +312,89 @@ def show_category_to_product_drilldown(engine):
             color='total_sales',
             color_continuous_scale='oranges'
         )
+        st.plotly_chart(fig, use_container_width=True)
+
+
+def show_courier_to_vehicle_drilldown(engine):
+    """Drill down from courier to vehicle type"""
+    st.subheader("🚚 Courier → Vehicle Type Drill-down")
+    st.caption("Select a courier to see breakdown by vehicle type")
+    
+    # Get available couriers
+    couriers = get_available_couriers(engine)
+    if not couriers:
+        st.warning("No courier data available.")
+        return
+    
+    # Select courier
+    selected_courier = st.selectbox(
+        "Select Courier:",
+        couriers,
+        key="drilldown_courier"
+    )
+    
+    if not selected_courier:
+        return
+    
+    st.divider()
+    
+    # Execute drill-down query
+    df, duration = drilldown_courier_to_vehicle(engine, selected_courier)
+    
+    if df.empty:
+        st.warning(f"No vehicle data available for {selected_courier}.")
+        return
+    
+    st.info(f"Query executed in {duration:.4f} seconds")
+    st.success(f"Showing vehicle breakdown for: **{selected_courier}**")
+    
+    # Display metrics
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Vehicle Types", len(df))
+    with col2:
+        st.metric("Total Sales", f"₱{df['total_sales'].sum():,.2f}")
+    with col3:
+        st.metric("Total Orders", f"{df['total_orders'].sum():,}")
+    with col4:
+        st.metric("Total Riders", f"{df['rider_count'].sum():,}")
+    
+    # Data table
+    st.subheader("Vehicle Type Breakdown")
+    display_df = df.copy()
+    display_df['total_sales'] = display_df['total_sales'].apply(lambda x: f"₱{x:,.2f}")
+    display_df['avg_order_value'] = display_df['avg_order_value'].apply(lambda x: f"₱{x:,.2f}")
+    display_df['total_orders'] = display_df['total_orders'].apply(lambda x: f"{x:,}")
+    display_df['total_quantity'] = display_df['total_quantity'].apply(lambda x: f"{x:,}")
+    display_df['rider_count'] = display_df['rider_count'].apply(lambda x: f"{x:,}")
+    st.dataframe(display_df, use_container_width=True, hide_index=True)
+    
+    # Visualizations
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("Sales by Vehicle Type")
+        fig = px.bar(
+            df,
+            x='vehicleType',
+            y='total_sales',
+            text='total_sales',
+            labels={'vehicleType': 'Vehicle Type', 'total_sales': 'Total Sales (₱)'},
+            color='total_sales',
+            color_continuous_scale='greens'
+        )
+        fig.update_traces(texttemplate='₱%{text:,.0f}', textposition='outside')
+        fig.update_layout(showlegend=False)
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        st.subheader("Orders by Vehicle Type")
+        fig = px.pie(
+            df,
+            values='total_orders',
+            names='vehicleType',
+            hole=0.4,
+            color_discrete_sequence=px.colors.sequential.Greens_r
+        )
+        fig.update_traces(textposition='inside', textinfo='percent+label')
         st.plotly_chart(fig, use_container_width=True)

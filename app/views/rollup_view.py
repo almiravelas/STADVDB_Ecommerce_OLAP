@@ -7,7 +7,8 @@ import plotly.express as px
 from queries.olap_queries import (
     rollup_sales_by_year,
     rollup_sales_by_quarter,
-    rollup_sales_by_category
+    rollup_sales_by_category,
+    rollup_sales_by_courier
 )
 
 
@@ -55,7 +56,7 @@ def show_rollup_view(engine):
     # Select roll-up dimension
     rollup_option = st.selectbox(
         "Select Roll-up Dimension:",
-        ["Time: Year Level", "Time: Quarter Level", "Product: Category Level"],
+        ["Time: Year Level", "Time: Quarter Level", "Product: Category Level", "Rider: Courier Level"],
         key="rollup_dimension"
     )
     
@@ -67,6 +68,8 @@ def show_rollup_view(engine):
         show_quarter_rollup(engine)
     elif rollup_option == "Product: Category Level":
         show_category_rollup(engine)
+    elif rollup_option == "Rider: Courier Level":
+        show_courier_rollup(engine)
 
 
 def show_year_rollup(engine):
@@ -271,6 +274,75 @@ def show_category_rollup(engine):
             df,
             values='total_sales',
             names='category',
+            hole=0.4,
+            color_discrete_sequence=px.colors.sequential.Oranges_r
+        )
+        fig.update_traces(textposition='inside', textinfo='percent+label')
+        st.plotly_chart(fig, use_container_width=True)
+
+
+def show_courier_rollup(engine):
+    """Roll-up to courier level"""
+    st.markdown("""
+    <div style='border-left: 4px solid #FF6B35; padding-left: 1rem; margin-bottom: 1rem;'>
+        <h3 style='color: #FF6B35; margin: 0;'>▨ Sales Rolled Up by Courier</h3>
+        <p style='color: #666; margin: 0.3rem 0 0 0; font-size: 0.9rem;'>Delivery service aggregation at courier level</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    df, duration = rollup_sales_by_courier(engine)
+    
+    if df.empty:
+        st.warning("No data available for courier roll-up.")
+        return
+    
+    st.info(f"Query executed in {duration:.4f} seconds")
+    
+    # Display metrics
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total Couriers", len(df))
+    with col2:
+        st.metric("Total Sales", f"₱{df['total_sales'].sum():,.2f}")
+    with col3:
+        st.metric("Total Orders", f"{df['total_orders'].sum():,}")
+    with col4:
+        st.metric("Total Riders", f"{df['rider_count'].sum():,}")
+    
+    # Data table
+    st.subheader("Courier Summary")
+    display_df = df.copy()
+    display_df['total_sales'] = display_df['total_sales'].apply(lambda x: f"₱{x:,.2f}")
+    display_df['avg_order_value'] = display_df['avg_order_value'].apply(lambda x: f"₱{x:,.2f}")
+    display_df['total_orders'] = display_df['total_orders'].apply(lambda x: f"{x:,}")
+    display_df['total_quantity'] = display_df['total_quantity'].apply(lambda x: f"{x:,}")
+    display_df['rider_count'] = display_df['rider_count'].apply(lambda x: f"{x:,}")
+    st.dataframe(display_df, use_container_width=True, hide_index=True)
+    
+    # Visualizations
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("Total Sales by Courier")
+        fig = px.bar(
+            df,
+            x='courier_name',
+            y='total_sales',
+            text='total_sales',
+            labels={'courier_name': 'Courier', 'total_sales': 'Total Sales (₱)'},
+            color='total_sales',
+            color_continuous_scale='oranges'
+        )
+        fig.update_traces(texttemplate='₱%{text:,.0f}', textposition='outside')
+        fig.update_layout(showlegend=False, xaxis_tickangle=-45)
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        st.subheader("Market Share by Courier")
+        fig = px.pie(
+            df,
+            values='total_sales',
+            names='courier_name',
             hole=0.4,
             color_discrete_sequence=px.colors.sequential.Oranges_r
         )

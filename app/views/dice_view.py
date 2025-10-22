@@ -8,7 +8,8 @@ from queries.olap_queries import (
     dice_multi_dimension,
     get_available_years,
     get_available_categories,
-    get_available_cities
+    get_available_cities,
+    get_available_couriers
 )
 
 
@@ -109,20 +110,21 @@ def show_dice_view(engine):
     years = get_available_years(engine)
     categories = get_available_categories(engine)
     cities = get_available_cities(engine)
+    couriers = get_available_couriers(engine)
     
-    if not years or not categories or not cities:
+    if not years or not categories or not cities or not couriers:
         st.warning("Insufficient data available for dice operation.")
         return
     
     # Filter selection
     st.subheader("Select Dimension Values")
     
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         st.markdown("""
         <div class='dice-dimension dice-time'>
-            <h4>▨ Time Dimension</h4>
+            <h4>▨ Time</h4>
         </div>
         """, unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
@@ -136,7 +138,7 @@ def show_dice_view(engine):
     with col2:
         st.markdown("""
         <div class='dice-dimension dice-product'>
-            <h4>▨ Product Dimension</h4>
+            <h4>▨ Product</h4>
         </div>
         """, unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
@@ -150,7 +152,7 @@ def show_dice_view(engine):
     with col3:
         st.markdown("""
         <div class='dice-dimension dice-location'>
-            <h4>▨ Location Dimension</h4>
+            <h4>▨ Location</h4>
         </div>
         """, unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
@@ -161,16 +163,30 @@ def show_dice_view(engine):
             key="dice_cities"
         )
     
+    with col4:
+        st.markdown("""
+        <div class='dice-dimension dice-rider' style='border-color: #9C27B0; background-color: #F3E5F5;'>
+            <h4 style='color: #6A1B9A;'>▨ Rider</h4>
+        </div>
+        """, unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+        selected_couriers = st.multiselect(
+            "Select Couriers:",
+            couriers,
+            default=couriers[:2] if len(couriers) >= 2 else couriers,
+            key="dice_couriers"
+        )
+    
     st.divider()
     
     # Validate selections
-    if not selected_years and not selected_categories and not selected_cities:
+    if not selected_years and not selected_categories and not selected_cities and not selected_couriers:
         st.info("Please select at least one value from any dimension to perform dice operation.")
         return
     
     # Show active filters
     st.subheader("🔍 Active Filters")
-    filter_cols = st.columns(3)
+    filter_cols = st.columns(4)
     with filter_cols[0]:
         if selected_years:
             st.success(f"**Years:** {', '.join(map(str, selected_years))}")
@@ -186,9 +202,14 @@ def show_dice_view(engine):
             st.success(f"**Cities:** {', '.join(selected_cities)}")
         else:
             st.info("**Cities:** All")
+    with filter_cols[3]:
+        if selected_couriers:
+            st.success(f"**Couriers:** {', '.join(selected_couriers)}")
+        else:
+            st.info("**Couriers:** All")
     
     # Execute dice query
-    df, duration = dice_multi_dimension(engine, selected_years, selected_categories, selected_cities)
+    df, duration = dice_multi_dimension(engine, selected_years, selected_categories, selected_cities, selected_couriers)
     
     if df.empty:
         st.warning("No data matches the selected criteria.")
