@@ -1,9 +1,18 @@
 import streamlit as st
+# --- MODIFICATION: Import time module ---
+import time
+# --- END MODIFICATION ---
 from utils.db_connection import get_warehouse_engine
 from queries.user_queries import get_user_data, get_distinct_user_attributes
 import pandas as pd
-import plotly.express as px
+# --- MODIFICATION: Remove px, import chart function ---
+from utils.charts import create_bar_chart
+# --- END MODIFICATION ---
 from views.icons import _inject_icon_css, _icon
+
+# --- MODIFICATION: Remove SUMMER_PALETTE ---
+# (Palette is now controlled by the "seaborn" template in charts.py)
+# --- END MODIFICATION ---
 
 def show_user_view(engine):
     _inject_icon_css()
@@ -15,23 +24,44 @@ def show_user_view(engine):
     with left_col:
         with st.container(border=True):
             _icon("Filters", "filter")
+            
+            # --- MODIFICATION: Time attribute query ---
+            start_attr = time.perf_counter()
             attributes = get_distinct_user_attributes(engine)
+            end_attr = time.perf_counter()
+            # --- END MODIFICATION ---
 
             with st.expander("Location Filters", expanded=True):
-                selected_continents = st.multiselect("Continent", options=attributes.get("continents", []))
-                selected_countries = st.multiselect("Country", options=attributes.get("countries", []))
-                selected_cities = st.multiselect("City", options=attributes.get("cities", []))
+                selected_continents = st.multiselect("Continent", options=attributes.get("continents", []), key="user_continents")
+                selected_countries = st.multiselect("Country", options=attributes.get("countries", []), key="user_countries")
+                selected_cities = st.multiselect("City", options=attributes.get("cities", []), key="user_cities")
 
             with st.expander("Demographic Filters", expanded=True):
-                selected_genders = st.multiselect("Gender", options=attributes.get("genders", []))
+                selected_genders = st.multiselect("Gender", options=attributes.get("genders", []), key="user_genders")
+
+            # --- MODIFICATION: Display attribute query time ---
+            st.caption(f"Filters loaded in {end_attr - start_attr:.4f}s")
+            # --- END MODIFICATION ---
 
     # --- OPTIMIZATION: Pass ALL filters to the data query function ---
-    df = get_user_data(
-        engine, selected_continents, selected_countries, selected_cities, selected_genders
-    )
+
+    # --- MODIFICATION: Time main data query ---
+    with st.spinner("Loading user data based on filters..."):
+        start_data = time.perf_counter()
+        df = get_user_data(
+            engine, selected_continents, selected_countries, selected_cities, selected_genders
+        )
+        end_data = time.perf_counter()
+        data_load_time = end_data - start_data
+    # --- END MODIFICATION ---
 
     # --- Main content ---
     with right_col:
+        
+        # --- MODIFICATION: Display main query time ---
+        st.caption(f"Data query complete in {data_load_time:.4f} seconds.")
+        # --- END MODIFICATION ---
+        
         if df.empty:
             st.warning("No data found for selected filters.")
             return
@@ -41,7 +71,10 @@ def show_user_view(engine):
             _icon("Key Metrics", "metrics")
             total_sales = df["sales_amount"].sum()
             unique_users = df["user_key"].nunique()
-            total_orders = df["order_number"].nunique()
+            
+            # --- OPTIMIZATION APPLIED HERE ---
+            # We now sum the pre-aggregated order counts from the new query
+            total_orders = df["total_orders"].sum()
 
             c1, c2, c3 = st.columns(3)
             c1.metric("Total Sales", f"₱{total_sales:,.2f}")
@@ -60,10 +93,15 @@ def show_user_view(engine):
                     .sort_values(ascending=False)
                     .reset_index()
                 )
-                st.plotly_chart(
-                    px.bar(cont, x="continent", y="sales_amount", labels={"sales_amount": "Total Sales (PHP)"}),
-                    use_container_width=True,
+                # --- MODIFICATION: Use create_bar_chart ---
+                chart_cont = create_bar_chart(
+                    cont, 
+                    x_axis="continent", 
+                    y_axis="sales_amount", 
+                    title="Total Sales by Continent"
                 )
+                st.plotly_chart(chart_cont, use_container_width=True)
+                # --- END MODIFICATION ---
 
             st.markdown("##### Total Sales by Country")
             country = (
@@ -72,10 +110,15 @@ def show_user_view(engine):
                 .sort_values(ascending=False)
                 .reset_index()
             )
-            st.plotly_chart(
-                px.bar(country, x="country", y="sales_amount", labels={"sales_amount": "Total Sales (PHP)"}),
-                use_container_width=True,
+            # --- MODIFICATION: Use create_bar_chart ---
+            chart_country = create_bar_chart(
+                country, 
+                x_axis="country", 
+                y_axis="sales_amount", 
+                title="Total Sales by Country"
             )
+            st.plotly_chart(chart_country, use_container_width=True)
+            # --- END MODIFICATION ---
 
         # Aggregated Summary (Binned)
         with st.container(border=True):
@@ -83,10 +126,15 @@ def show_user_view(engine):
                 # Make sure bin_level options are valid
                 valid_bins = [col for col in ["continent", "country", "city"] if col in df.columns]
                 if valid_bins:
-                    bin_level = st.selectbox("Group data by:", valid_bins)
+                    bin_level = st.selectbox("Group data by:", valid_bins, key="user_bin_level")
                     summary = (
                         df.groupby(bin_level)
-                        .agg(users=("user_key", "nunique"), total_sales=("sales_amount", "sum"))
+                        # --- OPTIMIZATION NOTE ---
+                        # We also aggregate total_orders here for a richer summary
+                        .agg(users=("user_key", "nunique"), 
+                             total_sales=("sales_amount", "sum"),
+                             total_orders=("total_orders", "sum")
+                            )
                         .reset_index()
                         .sort_values("total_sales", ascending=False)
                     )
@@ -97,6 +145,9 @@ def show_user_view(engine):
 
         # Raw sample (safe display)
         with st.container(border=True):
-            with st.expander("Sample of Filtered Raw Data"):
-                st.info("Showing random sample of up to 1,000 rows.")
+            
+            # --- OPTIMIZATION APPLIED HERE ---
+            # Updated text to reflect aggregated data
+            with st.expander("Sample of Filtered User-Level Data"):
+                st.info("Showing random sample of up to 1,000 aggregated user records.")
                 st.dataframe(df.sample(n=min(1000, len(df)), random_state=42), use_container_width=True)

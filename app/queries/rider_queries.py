@@ -9,8 +9,7 @@ def get_sales_with_rider_details(_engine: Engine) -> tuple[pd.DataFrame, float]:
     Fetches detailed, row-level sales data joined with ALL
     rider and date attributes for the detailed Rider Analytics view.
     
-    Returns a tuple: (pd.DataFrame, float) where float is the
-    query execution time in seconds.
+    (NO CHANGE: This view is *meant* to be detailed, so raw data is correct.)
     """
     if _engine is None:
         return pd.DataFrame(), 0.0
@@ -34,12 +33,8 @@ def get_sales_with_rider_details(_engine: Engine) -> tuple[pd.DataFrame, float]:
         JOIN dim_date dd ON fs.date_key = dd.date_key; 
     """
     try:
-        # --- MODIFICATION: Start timer ---
         start_time = time.perf_counter()
-        
         df = pd.read_sql(query, _engine)
-        
-        # --- MODIFICATION: End timer and calculate duration ---
         end_time = time.perf_counter()
         duration = end_time - start_time
         
@@ -52,8 +47,8 @@ def get_sales_with_rider_details(_engine: Engine) -> tuple[pd.DataFrame, float]:
 @st.cache_data(ttl=600)
 def get_sales_for_dashboard(_engine: Engine) -> tuple[pd.DataFrame, float]:
     """
-    Fetches row-level sales data with ONLY the columns
-    needed for the Main Dashboard aggregations.
+    Fetches data pre-aggregated at the ORDER level,
+    which is the grain needed for dashboard metrics and charts.
     
     Returns a tuple: (pd.DataFrame, float) where float is the
     query execution time in seconds.
@@ -61,26 +56,35 @@ def get_sales_for_dashboard(_engine: Engine) -> tuple[pd.DataFrame, float]:
     if _engine is None:
         return pd.DataFrame(), 0.0
 
+    # --- MODIFICATION: Query is now pre-aggregated ---
+    # We group by the order and its associated rider/date dimensions.
+    # We SUM() the sales_amount for each order.
+    # This massively reduces row count if fact_sales is at the line-item level.
     query = """
         SELECT
             fs.order_number,
-            fs.sales_amount,
-            dr.rider_key, -- Use key for accurate distinct counts
-            dr.rider_name, -- Need for metric fallback
-            dr.courier_name, -- Need for courier chart
+            dr.rider_key, 
+            dr.rider_name, 
+            dr.courier_name,
             dd.year, 
-            dd.month_name 
+            dd.month_name,
+            SUM(fs.sales_amount) AS sales_amount
         FROM fact_sales fs
         JOIN dim_rider dr ON fs.rider_key = dr.rider_key
-        JOIN dim_date dd ON fs.date_key = dd.date_key; 
+        JOIN dim_date dd ON fs.date_key = dd.date_key
+        GROUP BY
+            fs.order_number,
+            dr.rider_key,
+            dr.rider_name,
+            dr.courier_name,
+            dd.year, 
+            dd.month_name;
     """
+    # --- END MODIFICATION ---
+    
     try:
-        # --- MODIFICATION: Start timer ---
         start_time = time.perf_counter()
-        
         df = pd.read_sql(query, _engine)
-        
-        # --- MODIFICATION: End timer and calculate duration ---
         end_time = time.perf_counter()
         duration = end_time - start_time
         

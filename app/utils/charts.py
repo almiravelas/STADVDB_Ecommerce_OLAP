@@ -4,15 +4,26 @@ import plotly.graph_objects as go
 
 # Enter design for your charts guyz heree
 
-def create_bar_chart(df: pd.DataFrame, x_axis: str, y_axis: str, title: str):
+def create_bar_chart(df: pd.DataFrame, x_axis: str, y_axis: str, title: str, color: str = None):
+    """
+    Creates a bar chart.
+    - If 'color' is None (default), colors bars by the y-axis value (gradient).
+    - If 'color' is a column name, colors bars by that column (grouped).
+    """
     if df.empty:
         return None
+    
+    # --- MODIFICATION ---
+    # Use the 'color' param if provided, otherwise default to y_axis
+    color_param = color if color else y_axis
+    # --- END MODIFICATION ---
+
     fig = px.bar(
         df,
         x=x_axis,
         y=y_axis,
         title=title,
-        color=y_axis,
+        color=color_param, # <-- Use the modified color parameter
         template="seaborn",
         labels={y_axis: "Total Sales (₱)", x_axis: x_axis.replace("_", " ").title()},
     )

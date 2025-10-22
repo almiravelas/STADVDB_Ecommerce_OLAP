@@ -125,7 +125,6 @@ def fact_sales():
 
 
 def main():
-    # fact and dimensions (uncomment when done)
     dim_rider()
     dim_user()
     dim_product()

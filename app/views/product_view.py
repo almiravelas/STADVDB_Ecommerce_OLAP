@@ -1,14 +1,18 @@
 import streamlit as st
 import pandas as pd
 from utils.db_connection import get_warehouse_engine
-from queries.product_queries import get_product_data
+# --- MODIFICATION: Import the new function ---
+from queries.product_queries import get_product_view_data
+# --- END MODIFICATION ---
 from utils.charts import create_bar_chart  # Assuming this utility exists
 
 @st.cache_data(ttl=600)
 def load_product_data(_engine): 
     """Load product data from the database."""
-    # This function is assumed to return (df, duration)
-    return get_product_data(_engine)
+    # --- MODIFICATION: Call the new function ---
+    # This function now returns (df, duration)
+    return get_product_view_data(_engine)
+    # --- END MODIFICATION ---
 
 def show_product_view(engine):
     st.title("Product Performance Analytics 🛍️")
@@ -29,7 +33,7 @@ def show_product_view(engine):
 
         # Filter by Product Category
         categories = sorted(df["category"].unique())
-        category_sel = st.multiselect("Category", categories, default=categories)
+        category_sel = st.multiselect("Category", categories, default=categories, key="prod_category_sel")
 
         # Filter by Price Range
         min_price, max_price = float(df["price"].min()), float(df["price"].max())
@@ -42,11 +46,12 @@ def show_product_view(engine):
             "Price Range", 
             min_value=min_price, 
             max_value=max_price, 
-            value=(min_price, max_price)
+            value=(min_price, max_price),
+            key="prod_price_range"
         )
 
         # Granularity Control
-        group_by = st.radio("Group By", ["product_name", "category"], horizontal=False)
+        group_by = st.radio("Group By", ["product_name", "category"], horizontal=False, key="prod_group_by")
 
     with right_col:
         # Apply filters (Slice & Dice)
@@ -56,6 +61,7 @@ def show_product_view(engine):
         ]
 
         # Aggregate data (Roll-up / Drill-down)
+        # This pandas aggregation is now fast because it runs on fewer rows
         agg = filtered_df.groupby(group_by)["total_sales"].sum().reset_index()
         agg = agg.sort_values(by="total_sales", ascending=False)
 
