@@ -598,6 +598,7 @@ def slice_by_courier(_engine: Engine, courier: str) -> tuple[pd.DataFrame, float
     
     query = """
         SELECT 
+            dr.courier_name,
             dd.year,
             dd.month_name,
             dp.category,
@@ -613,7 +614,7 @@ def slice_by_courier(_engine: Engine, courier: str) -> tuple[pd.DataFrame, float
         JOIN dim_product dp ON fs.product_key = dp.product_key
         JOIN dim_user du ON fs.customer_key = du.user_key
         WHERE dr.courier_name = :courier
-        GROUP BY dd.year, dd.month_name, dp.category, du.city, dr.vehicleType
+        GROUP BY dr.courier_name, dd.year, dd.month_name, dp.category, du.city, dr.vehicleType
         ORDER BY dd.year, dd.month_name, total_sales DESC;
     """
     try:

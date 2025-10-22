@@ -60,6 +60,7 @@ def sqlite_engine() -> Iterator[Engine]:
                 month_name TEXT,
                 day INTEGER,
                 month INTEGER,
+                quarter INTEGER,
                 year INTEGER,
                 is_weekend TEXT
             );
@@ -113,10 +114,10 @@ def sqlite_engine() -> Iterator[Engine]:
         # Seed dim_date
         conn.execute(text(
             """
-            INSERT INTO dim_date (date_key, full_date, day_name, month_name, day, month, year, is_weekend) VALUES
-            (20210102, '2021-01-02', 'Saturday', 'January', 2, 1, 2021, 'Y'),
-            (20210103, '2021-01-03', 'Sunday', 'January', 3, 1, 2021, 'Y'),
-            (20210510, '2021-05-10', 'Monday', 'May', 10, 5, 2021, 'N');
+            INSERT INTO dim_date (date_key, full_date, day_name, month_name, day, month, quarter, year, is_weekend) VALUES
+            (20210102, '2021-01-02', 'Saturday', 'January', 2, 1, 1, 2021, 'Y'),
+            (20210103, '2021-01-03', 'Sunday', 'January', 3, 1, 1, 2021, 'Y'),
+            (20210510, '2021-05-10', 'Monday', 'May', 10, 5, 2, 2021, 'N');
             """
         ))
         
