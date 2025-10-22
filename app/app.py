@@ -1,38 +1,93 @@
 import streamlit as st
-from views import dashboard_view, rider_view, product_view, user_view, date_view
+from views import rollup_view, drilldown_view, slice_view, dice_view, pivot_view
 from utils.db_connection import get_warehouse_engine
 
 st.set_page_config(
-    page_title="Shopee Sales Dashboard",
-    layout="wide",
-    page_icon="🧡"
+    page_title="Shopee OLAP Analytics",
+    page_icon="🧡",
+    layout="wide"
 )
 
-st.title("🧡 Shopee Sales Dashboard")
+# Custom CSS for medium-wide layout and borders
+st.markdown("""
+    <style>
+    .block-container {
+        max-width: 1200px;
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+    
+    /* Light mode styles (default) */
+    div[data-testid="stMetric"] {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 12px;
+        background-color: #fafafa;
+    }
+    div[data-testid="stDataFrame"] {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 8px;
+    }
+    div.stPlotlyChart {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 8px;
+        background-color: white;
+    }
+    div[data-testid="stExpander"] {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+    }
+    
+    /* Dark mode styles */
+    @media (prefers-color-scheme: dark) {
+        div[data-testid="stMetric"] {
+            border: 1px solid #404040;
+            background-color: #1e1e1e;
+        }
+        div[data-testid="stDataFrame"] {
+            border: 1px solid #404040;
+        }
+        div.stPlotlyChart {
+            border: 1px solid #404040;
+            background-color: #0e1117;
+        }
+        div[data-testid="stExpander"] {
+            border: 1px solid #404040;
+        }
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-engine = get_warehouse_engine() 
+st.title("🧡 Shopee OLAP Analytics Dashboard")
+st.markdown("""
+This dashboard demonstrates **OLAP (Online Analytical Processing)** operations on e-commerce sales data.
+Explore different perspectives of the data using various analytical operations.
+""")
 
-engine = get_warehouse_engine() 
+engine = get_warehouse_engine()
 
-tab1, tab2, tab3, tab4, tab5= st.tabs([
-    "Dashboard",
-    "Product Analysis",
-    "Rider Performance",
-    "Date Analysis",
-    "User Analysis"
+# Create tabs for OLAP operations
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    "▣ Roll-up",
+    "▤ Drill-down",
+    "▥ Slice",
+    "▦ Dice",
+    "▧ Pivot"
 ])
 
 with tab1:
-    dashboard_view.show_dashboard(engine)
+    rollup_view.show_rollup_view(engine)
 
 with tab2:
-    product_view.show_product_view(engine)
+    drilldown_view.show_drilldown_view(engine)
 
 with tab3:
-    rider_view.show_rider_view(engine)
+    slice_view.show_slice_view(engine)
     
 with tab4:
-    date_view.show_date_view(engine)
+    dice_view.show_dice_view(engine)
     
 with tab5:
-    user_view.show_user_view(engine)
+    pivot_view.show_pivot_view(engine)
