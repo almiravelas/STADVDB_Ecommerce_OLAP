@@ -98,7 +98,7 @@ def show_dice_view(engine):
     <div class='dice-header'>
         <h2>▦ Dice Operations</h2>
         <p>
-            <strong>Dice</strong> selects multiple values from multiple dimensions, creating a sub-cube by specifying ranges or sets of values.
+            <strong>Dice</strong> selects multiple values from multiple dimensions.
             For example: Years IN (2023, 2024) AND Categories IN ('Electronics', 'Fashion') AND Cities IN ('Manila', 'Cebu').
         </p>
     </div>
@@ -116,7 +116,7 @@ def show_dice_view(engine):
     couriers = get_available_couriers(engine)
     
     if not years or not categories or not cities or not couriers:
-        st.warning("Insufficient data available for dice operation (may be missing data for 2024/2025).")
+        st.warning("Insufficient data available for dice operation.")
         return
     
     # Filter selection
@@ -237,10 +237,10 @@ def show_dice_view(engine):
     
     # Analysis tabs
     tab1, tab2, tab3, tab4 = st.tabs([
-        "📊 Summary Analysis",
-        "📈 Trend Analysis",
-        "🎯 Top Performers",
-        "📋 Detailed Data"
+        "Summary Analysis",
+        "Trend Analysis",
+        "Top Performers",
+        "Detailed Data"
     ])
     
     with tab1:
@@ -453,7 +453,7 @@ def show_detailed_data(df):
     st.dataframe(display_df, use_container_width=True, hide_index=True)
     
     # Download option
-    if st.button("📥 Download Complete Data as CSV"):
+    if st.button("Download Complete Data as CSV"):
         csv = df.to_csv(index=False)
         st.download_button(
             label="Download CSV",

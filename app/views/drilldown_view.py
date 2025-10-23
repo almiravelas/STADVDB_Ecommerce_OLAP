@@ -52,7 +52,7 @@ def show_drilldown_view(engine):
     <div class='drilldown-header'>
         <h2>▤ Drill-down Operations</h2>
         <p>
-            <strong>Drill-down</strong> navigates from higher to lower levels of detail, allowing you to explore data at finer granularity.
+            <strong>Drill-down</strong> navigates from higher to lower levels of detail.
             For example: Year → Month → Day, or Category → Product.
         </p>
     </div>
@@ -155,7 +155,7 @@ def show_year_to_month_drilldown(engine):
 
 def show_month_to_day_drilldown(engine):
     """Drill down from month to day"""
-    st.subheader("📅 Drill Down: Month → Day")
+    st.subheader("Drill Down: Month → Day")
     st.caption("Explore daily details for a specific month")
     
     all_years = get_available_years(engine)
