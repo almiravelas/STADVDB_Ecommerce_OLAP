@@ -61,6 +61,13 @@ def show_dice_view(engine):
     .dice-location h4 {
         color: #1565C0;
     }
+    .dice-rider {
+        border-color: #9C27B0;
+        background-color: #F3E5F5;
+    }
+    .dice-rider h4 {
+        color: #6A1B9A;
+    }
     @media (prefers-color-scheme: dark) {
         .dice-header {
             background-color: #2d1a33;
@@ -92,6 +99,13 @@ def show_dice_view(engine):
         }
         .dice-location h4 {
             color: #42A5F5;
+        }
+        .dice-rider {
+            border-color: #BA68C8;
+            background-color: #2d1a33;
+        }
+        .dice-rider h4 {
+            color: #BA68C8;
         }
     }
     </style>
@@ -168,8 +182,8 @@ def show_dice_view(engine):
     
     with col4:
         st.markdown("""
-        <div class='dice-dimension dice-rider' style='border-color: #9C27B0; background-color: #F3E5F5;'>
-            <h4 style='color: #6A1B9A;'>▨ Rider</h4>
+        <div class='dice-dimension dice-rider'>
+            <h4>▨ Rider</h4>
         </div>
         """, unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
@@ -213,13 +227,22 @@ def show_dice_view(engine):
     
     # Execute dice query
     query_years = selected_years if selected_years else years
-    df, duration = dice_multi_dimension(engine, query_years, selected_categories, selected_cities, selected_couriers)
+    df, duration, total_rows = dice_multi_dimension(
+        engine,
+        query_years,
+        selected_categories,
+        selected_cities,
+        selected_couriers
+    )
     
     if df.empty:
         st.warning("No data matches the selected criteria.")
         return
     
-    st.info(f"Query executed in {duration:.4f} seconds | Rows returned: {len(df):,}")
+    st.info(
+        f"Query executed in {duration:.4f} seconds | Rows returned: {len(df):,}"
+        + (f" | Total rows available: {total_rows:,}" if total_rows else "")
+    )
     
     # Display metrics
     col1, col2, col3, col4 = st.columns(4)

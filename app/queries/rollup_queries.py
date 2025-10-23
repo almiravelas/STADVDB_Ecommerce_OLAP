@@ -44,18 +44,21 @@ def rollup_sales_by_quarter(_engine: Engine) -> tuple[pd.DataFrame, float, str, 
     if _engine is None:
         return pd.DataFrame(), 0.0, "", None
     
+    quarter_calc_expr = "((dd.month - 1) DIV 3) + 1"  # derive quarter from the month integer
+    quarter_select_expr = f"CONCAT('Q', {quarter_calc_expr})" # e.g., "CONCAT('Q', 1)" -> "Q1"
+
     query = f"""
         SELECT 
             dd.year,
-            dd.quarter,
+            {quarter_select_expr} AS quarter,
             COUNT(DISTINCT fs.order_number) AS total_orders,
             SUM(fs.sales_amount) AS total_sales,
             SUM(fs.quantity) AS total_quantity,
             {AOV_EXPR} AS avg_order_value
         FROM fact_sales fs
         JOIN dim_date dd ON fs.date_key = dd.date_key
-        GROUP BY dd.year, dd.quarter
-        ORDER BY dd.year, dd.quarter;
+    GROUP BY dd.year, {quarter_select_expr}
+    ORDER BY dd.year, quarter;
     """
     params = None
     try:

@@ -107,7 +107,7 @@ def show_year_rollup(engine):
     display_df['avg_order_value'] = display_df['avg_order_value'].apply(lambda x: f"₱{x:,.2f}")
     display_df['total_orders'] = display_df['total_orders'].apply(lambda x: f"{x:,}")
     display_df['total_quantity'] = display_df['total_quantity'].apply(lambda x: f"{x:,}")
-    st.dataframe(display_df, width='stretch', hide_index=True)
+    st.dataframe(display_df, use_container_width=True, hide_index=True)
     
     # Visualizations
     col1, col2 = st.columns(2)
@@ -125,7 +125,8 @@ def show_year_rollup(engine):
         )
         fig.update_traces(texttemplate='₱%{text:,.0f}', textposition='outside')
         fig.update_layout(showlegend=False)
-        st.plotly_chart(fig, width='stretch')
+        fig.update_xaxes(dtick=1)
+        st.plotly_chart(fig, use_container_width=True) # <-- FIX
     
     with col2:
         st.subheader("Total Orders by Year")
@@ -138,7 +139,8 @@ def show_year_rollup(engine):
             text='total_orders'
         )
         fig.update_traces(texttemplate='%{text:,}', textposition='top center', line_color='#FF6B35')
-        st.plotly_chart(fig, width='stretch')
+        fig.update_xaxes(dtick=1)
+        st.plotly_chart(fig, use_container_width=True) # <-- FIX
 
 
 def show_quarter_rollup(engine):
@@ -180,7 +182,7 @@ def show_quarter_rollup(engine):
     display_df['avg_order_value'] = display_df['avg_order_value'].apply(lambda x: f"₱{x:,.2f}")
     display_df['total_orders'] = display_df['total_orders'].apply(lambda x: f"{x:,}")
     display_df['total_quantity'] = display_df['total_quantity'].apply(lambda x: f"{x:,}")
-    st.dataframe(display_df, width='stretch', hide_index=True)
+    st.dataframe(display_df, use_container_width=True, hide_index=True)
     
     # Visualizations
     col1, col2 = st.columns(2)
@@ -196,7 +198,7 @@ def show_quarter_rollup(engine):
             color_continuous_scale='oranges'
         )
         fig.update_layout(showlegend=False, xaxis_tickangle=-45)
-        st.plotly_chart(fig, width='stretch')
+        st.plotly_chart(fig, use_container_width=True) # <-- FIX
     
     with col2:
         st.subheader("Average Order Value by Quarter")
@@ -209,7 +211,7 @@ def show_quarter_rollup(engine):
         )
         fig.update_traces(line_color='#FF6B35')
         fig.update_layout(xaxis_tickangle=-45)
-        st.plotly_chart(fig, width='stretch')
+        st.plotly_chart(fig, use_container_width=True) # <-- FIX
 
 
 def show_category_rollup(engine):
@@ -248,7 +250,7 @@ def show_category_rollup(engine):
     display_df['total_orders'] = display_df['total_orders'].apply(lambda x: f"{x:,}")
     display_df['total_quantity'] = display_df['total_quantity'].apply(lambda x: f"{x:,}")
     display_df['product_count'] = display_df['product_count'].apply(lambda x: f"{x:,}")
-    st.dataframe(display_df, width='stretch', hide_index=True)
+    st.dataframe(display_df, use_container_width=True, hide_index=True)
     
     # Visualizations
     col1, col2 = st.columns(2)
@@ -266,7 +268,7 @@ def show_category_rollup(engine):
         )
         fig.update_traces(texttemplate='₱%{text:,.0f}', textposition='outside')
         fig.update_layout(showlegend=False, xaxis_tickangle=-45)
-        st.plotly_chart(fig, width='stretch')
+        st.plotly_chart(fig, use_container_width=True) # <-- FIX
     
     with col2:
         st.subheader("Sales Distribution by Category")
@@ -278,7 +280,7 @@ def show_category_rollup(engine):
             color_discrete_sequence=px.colors.sequential.Oranges_r
         )
         fig.update_traces(textposition='inside', textinfo='percent+label')
-        st.plotly_chart(fig, width='stretch')
+        st.plotly_chart(fig, use_container_width=True) # <-- FIX
 
 
 def show_courier_rollup(engine):
@@ -317,9 +319,9 @@ def show_courier_rollup(engine):
     display_df['total_orders'] = display_df['total_orders'].apply(lambda x: f"{x:,}")
     display_df['total_quantity'] = display_df['total_quantity'].apply(lambda x: f"{x:,}")
     display_df['rider_count'] = display_df['rider_count'].apply(lambda x: f"{x:,}")
-    st.dataframe(display_df, width='stretch', hide_index=True)
+    st.dataframe(display_df, use_container_width=True, hide_index=True)
     
-    # Visualizations
+    # VisualDizations
     col1, col2 = st.columns(2)
     
     with col1:
@@ -335,7 +337,7 @@ def show_courier_rollup(engine):
         )
         fig.update_traces(texttemplate='₱%{text:,.0f}', textposition='outside')
         fig.update_layout(showlegend=False, xaxis_tickangle=-45)
-        st.plotly_chart(fig, width='stretch')
+        st.plotly_chart(fig, use_container_width=True) # <-- FIX
     
     with col2:
         st.subheader("Market Share by Courier")
@@ -347,4 +349,4 @@ def show_courier_rollup(engine):
             color_discrete_sequence=px.colors.sequential.Oranges_r
         )
         fig.update_traces(textposition='inside', textinfo='percent+label')
-        st.plotly_chart(fig, width='stretch')
+        st.plotly_chart(fig, use_container_width=True) # <-- FIX

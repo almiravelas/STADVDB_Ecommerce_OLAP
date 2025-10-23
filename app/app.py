@@ -61,48 +61,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🧡 Shopee OLAP Analytics Dashboard")
-st.markdown("""
-This dashboard demonstrates **OLAP (Online Analytical Processing)** operations on e-commerce sales data.
-Explore different perspectives of the data using various analytical operations.
-""")
-
-# Sidebar for cache management
-with st.sidebar:
-    st.header("⚙️ Settings")
-    st.markdown("---")
-    
-    st.subheader("🔄 Cache Management")
-    st.caption("Cached queries improve performance by storing recent results.")
-    
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        if st.button("🗑️ Clear Query Cache", use_container_width=True):
-            st.cache_data.clear()
-            st.success("✅ Cache cleared!")
-            st.rerun()
-    with col2:
-        if st.button("ℹ️", use_container_width=True, help="Cache Information"):
-            st.info("""
-            **Cache Info:**
-            - Query Results: 5 min TTL
-            - Lookups: 10 min TTL
-            - Connection: Persistent
-            """)
-    
-    st.markdown("---")
-    
-    # Cache performance indicator
-    st.subheader("📊 Performance")
-    st.caption("Queries execute faster when cached (< 0.05s = cached)")
-    
-    st.markdown("---")
-    st.caption("💡 **Tip:** First query hits database, subsequent queries use cache for 5 minutes.")
 
 engine = get_warehouse_engine()
 
 # Create tabs for OLAP operations
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "🔍 EXPLAIN",
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "▣ Roll-up",
     "▤ Drill-down",
     "▥ Slice",
@@ -110,20 +73,20 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "▧ Pivot"
 ])
 
-with tab1:
-    explain_view.show_explain_view(engine)
+#with tab1:
+   # explain_view.show_explain_view(engine)
 
-with tab2:
+with tab1:
    rollup_view.show_rollup_view(engine)
 
-with tab3:
+with tab2:
     drilldown_view.show_drilldown_view(engine)
     
-with tab4:
+with tab3:
     slice_view.show_slice_view(engine)
     
-with tab5:
+with tab4:
     dice_view.show_dice_view(engine)
 
-with tab6:
+with tab5:
     pivot_view.show_pivot_view(engine)

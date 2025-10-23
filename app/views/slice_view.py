@@ -274,6 +274,8 @@ def show_category_slice(engine):
     # Filter for 2024, 2025
     year_summary = year_summary[year_summary['year'].isin([2024, 2025])]
     
+    year_summary['year'] = year_summary['year'].astype(str) # <-- FIX APPLIED
+    
     fig = px.line(
         year_summary,
         x='year',
@@ -401,6 +403,8 @@ def show_city_slice(engine):
     # Filter for 2024, 2025
     year_summary = year_summary[year_summary['year'].isin([2024, 2025])]
     
+    year_summary['year'] = year_summary['year'].astype(str) # <-- FIX APPLIED
+
     fig = px.line(
         year_summary,
         x='year',
@@ -532,6 +536,8 @@ def show_courier_slice(engine):
     # Filter for 2024, 2025
     year_summary = year_summary[year_summary['year'].isin([2024, 2025])]
     
+    year_summary['year'] = year_summary['year'].astype(str) # <-- FIX APPLIED
+
     fig = px.line(
         year_summary,
         x='year',

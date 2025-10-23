@@ -9,7 +9,7 @@ import time
 AOV_EXPR = "SUM(fs.sales_amount)/NULLIF(COUNT(DISTINCT fs.order_number),0)"
 
 
-# @st.cache_data(ttl=300)  # Cache for 5 minutes
+@st.cache_data(ttl=300)  # Cache for 5 minutes
 def drilldown_year_to_month(_engine: Engine, year: int) -> tuple[pd.DataFrame, float, str, tuple | None]:
     """Drill down from year to month level"""
     if _engine is None:
