@@ -84,14 +84,17 @@ def show_year_slice(engine):
     st.caption("View all dimensions for a specific year")
     
     # Get available years
-    years = get_available_years(engine)
+    all_years = get_available_years(engine)
+    # Filter for 2024 and 2025
+    years = [year for year in all_years if year in [2024, 2025]]
+    
     if not years:
-        st.warning("No years available.")
+        st.warning("No data available for 2024 or 2025.")
         return
     
     selected_year = st.selectbox("Select Year:", years, key="slice_year")
     
-    df, duration = slice_by_year(engine, selected_year)
+    df, duration, query, params = slice_by_year(engine, selected_year)
     
     if df.empty:
         st.warning(f"No data available for year {selected_year}.")
@@ -164,7 +167,7 @@ def show_year_slice(engine):
     
     # Top cities
     st.subheader(f"Top User Cities in {selected_year}")
-    city_summary = df.groupby('user_city').agg({
+    city_summary = df.groupby('city').agg({
         'total_sales': 'sum',
         'total_orders': 'sum'
     }).reset_index().sort_values('total_sales', ascending=False).head(10)
@@ -180,10 +183,10 @@ def show_year_slice(engine):
     with col2:
         fig = px.bar(
             city_summary,
-            y='user_city',
+            y='city',
             x='total_sales',
             orientation='h',
-            labels={'user_city': 'City', 'total_sales': 'Total Sales (₱)'},
+            labels={'city': 'City', 'total_sales': 'Total Sales (₱)'},
             color='total_sales',
             color_continuous_scale='oranges'
         )
@@ -212,7 +215,7 @@ def show_category_slice(engine):
     
     selected_category = st.selectbox("Select Category:", categories, key="slice_category")
     
-    df, duration = slice_by_category(engine, selected_category)
+    df, duration, query, params = slice_by_category(engine, selected_category)
     
     if df.empty:
         st.warning(f"No data available for category: {selected_category}.")
@@ -268,6 +271,9 @@ def show_category_slice(engine):
         'total_orders': 'sum'
     }).reset_index().sort_values('year')
     
+    # Filter for 2024, 2025
+    year_summary = year_summary[year_summary['year'].isin([2024, 2025])]
+    
     fig = px.line(
         year_summary,
         x='year',
@@ -276,21 +282,21 @@ def show_category_slice(engine):
         labels={'year': 'Year', 'total_sales': 'Total Sales (₱)'},
         text='total_sales'
     )
-    fig.update_traces(texttemplate='₱%{text:,.0f}', textposition='top center', line_color='#FF6B35')
+    fig.update_layout(showlegend=False, xaxis_tickangle=-45)
     st.plotly_chart(fig, use_container_width=True)
     
     # Top cities
     st.subheader(f"Top User Cities for {selected_category}")
-    city_summary = df.groupby('user_city').agg({
+    city_summary = df.groupby('city').agg({
         'total_sales': 'sum',
         'total_orders': 'sum'
     }).reset_index().sort_values('total_sales', ascending=False).head(10)
     
     fig = px.bar(
         city_summary,
-        x='user_city',
+        x='city',
         y='total_sales',
-        labels={'user_city': 'City', 'total_sales': 'Total Sales (₱)'},
+        labels={'city': 'City', 'total_sales': 'Total Sales (₱)'},
         color='total_sales',
         color_continuous_scale='oranges'
     )
@@ -319,7 +325,7 @@ def show_city_slice(engine):
     
     selected_city = st.selectbox("Select City:", cities, key="slice_city")
     
-    df, duration = slice_by_city(engine, selected_city)
+    df, duration, query, params = slice_by_city(engine, selected_city)
     
     if df.empty:
         st.warning(f"No data available for city: {selected_city}.")
@@ -392,6 +398,9 @@ def show_city_slice(engine):
         'total_orders': 'sum'
     }).reset_index().sort_values('year')
     
+    # Filter for 2024, 2025
+    year_summary = year_summary[year_summary['year'].isin([2024, 2025])]
+    
     fig = px.line(
         year_summary,
         x='year',
@@ -413,7 +422,7 @@ def show_city_slice(engine):
 
 
 def show_courier_slice(engine):
-    st.subheader(" Slice by Courier")
+    st.subheader("🚚 Slice by Courier")
     st.caption("Fix the courier dimension to view data for a specific delivery service")
     
     # Get available couriers
@@ -435,7 +444,7 @@ def show_courier_slice(engine):
     st.divider()
     
     # Execute slice query
-    df, duration = slice_by_courier(engine, selected_courier)
+    df, duration, query, params = slice_by_courier(engine, selected_courier)
     
     if df.empty:
         st.warning(f"No data available for courier: {selected_courier}")
@@ -447,13 +456,13 @@ def show_courier_slice(engine):
     # Display summary metrics
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Total Sales", f"{df['total_sales'].sum():,.2f}")
+        st.metric("Total Sales", f"₱{df['total_sales'].sum():,.2f}")
     with col2:
-        st.metric("Total Orders", f"{df['total_orders'].sum():,}")
+        st.metric("Total Orders", f"₱{df['total_orders'].sum():,}")
     with col3:
-        st.metric("Total Quantity", f"{df['total_quantity'].sum():,}")
+        st.metric("Total Quantity", f"₱{df['total_quantity'].sum():,}")
     with col4:
-        st.metric("Avg Order Value", f"{df['avg_order_value'].mean():,.2f}")
+        st.metric("Avg Order Value", f"₱{df['avg_order_value'].mean():,.2f}")
     
     # Multi-dimensional analysis
     st.subheader("Multi-Dimensional Analysis")
@@ -473,11 +482,11 @@ def show_courier_slice(engine):
             x='vehicleType',
             y='total_sales',
             text='total_sales',
-            labels={'vehicleType': 'Vehicle Type', 'total_sales': 'Total Sales ()'},
+            labels={'vehicleType': 'Vehicle Type', 'total_sales': 'Total Sales (₱)'},
             color='total_sales',
             color_continuous_scale='blues'
         )
-        fig.update_traces(texttemplate='%{text:,.0f}', textposition='outside')
+        fig.update_traces(texttemplate='₱%{text:,.0f}', textposition='outside')
         fig.update_layout(showlegend=False)
         st.plotly_chart(fig, use_container_width=True)
     
@@ -505,11 +514,11 @@ def show_courier_slice(engine):
         x='total_sales',
         orientation='h',
         text='total_sales',
-        labels={'category': 'Category', 'total_sales': 'Total Sales ()'},
+        labels={'category': 'Category', 'total_sales': 'Total Sales (₱)'},
         color='total_sales',
         color_continuous_scale='blues'
     )
-    fig.update_traces(texttemplate='%{text:,.0f}', textposition='outside')
+    fig.update_traces(texttemplate='₱%{text:,.0f}', textposition='outside')
     fig.update_layout(showlegend=False, yaxis={'categoryorder': 'total ascending'})
     st.plotly_chart(fig, use_container_width=True)
     
@@ -520,21 +529,24 @@ def show_courier_slice(engine):
         'total_orders': 'sum'
     }).reset_index().sort_values('year')
     
+    # Filter for 2024, 2025
+    year_summary = year_summary[year_summary['year'].isin([2024, 2025])]
+    
     fig = px.line(
         year_summary,
         x='year',
         y='total_sales',
         markers=True,
-        labels={'year': 'Year', 'total_sales': 'Total Sales ()'},
+        labels={'year': 'Year', 'total_sales': 'Total Sales (₱)'},
         text='total_sales'
     )
-    fig.update_traces(texttemplate='%{text:,.0f}', textposition='top center', line_color='#2196F3')
+    fig.update_traces(texttemplate='₱%{text:,.0f}', textposition='top center', line_color='#2196F3')
     st.plotly_chart(fig, use_container_width=True)
     
     # Detailed data
     with st.expander("View Detailed Slice Data (First 100 rows)"):
         display_df = df.head(100).copy()
-        display_df['total_sales'] = display_df['total_sales'].apply(lambda x: f"{x:,.2f}")
+        display_df['total_sales'] = display_df['total_sales'].apply(lambda x: f"₱{x:,.2f}")
         display_df['total_orders'] = display_df['total_orders'].apply(lambda x: f"{x:,}")
         display_df['total_quantity'] = display_df['total_quantity'].apply(lambda x: f"{x:,}")
         st.dataframe(display_df, use_container_width=True, hide_index=True)

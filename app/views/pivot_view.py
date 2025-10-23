@@ -92,7 +92,14 @@ def show_category_month_pivot(engine):
     df['year_month'] = df['year'].astype(str) + '-' + df['month_name']
     
     # Select year for focused view
-    available_years = sorted(df['year'].unique())
+    all_available_years = sorted(df['year'].unique())
+    # Filter for 2024 and 2025
+    available_years = [year for year in all_available_years if year in [2024, 2025]]
+    
+    if not available_years:
+        st.warning("No data available for 2024 or 2025.")
+        return
+        
     selected_year = st.selectbox("Select Year for Detailed View:", available_years, key="pivot_cat_year")
     
     df_year = df[df['year'] == selected_year].copy()
@@ -172,7 +179,9 @@ def show_category_month_pivot(engine):
     
     # All years comparison
     st.subheader("Multi-Year Category Performance")
-    yearly_category = df.groupby(['year', 'category'])['total_sales'].sum().reset_index()
+    # Filter original df for only 2024 and 2025 to show in comparison chart
+    df_filtered_years = df[df['year'].isin([2024, 2025])]
+    yearly_category = df_filtered_years.groupby(['year', 'category'])['total_sales'].sum().reset_index()
     
     fig = px.bar(
         yearly_category,
@@ -317,6 +326,13 @@ def show_year_quarter_pivot(engine):
         return
     
     st.info(f"Query executed in {duration:.4f} seconds")
+    
+    # Filter for 2024 and 2025
+    df = df[df['year'].isin([2024, 2025])].copy()
+    
+    if df.empty:
+        st.warning("No data available for 2024 or 2025.")
+        return
     
     # Create pivot table for sales
     pivot_sales = df.pivot_table(

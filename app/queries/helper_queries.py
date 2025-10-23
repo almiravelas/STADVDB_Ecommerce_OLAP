@@ -6,7 +6,7 @@ import streamlit as st
 from sqlalchemy.engine import Engine
 
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=600)  # Cache for 10 minutes (lookup data changes less frequently)
 def get_available_years(_engine: Engine) -> list:
     """Get list of available years (from dim_date)"""
     if _engine is None:
@@ -20,7 +20,7 @@ def get_available_years(_engine: Engine) -> list:
         return []
 
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=600)  # Cache for 10 minutes (lookup data changes less frequently)
 def get_available_categories(_engine: Engine) -> list:
     """Get list of available product categories"""
     if _engine is None:
@@ -34,7 +34,7 @@ def get_available_categories(_engine: Engine) -> list:
         return []
 
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=600)  # Cache for 10 minutes (lookup data changes less frequently)
 def get_available_cities(_engine: Engine) -> list:
     """Get list of available user cities"""
     if _engine is None:
@@ -48,7 +48,7 @@ def get_available_cities(_engine: Engine) -> list:
         return []
 
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=600)  # Cache for 10 minutes (lookup data changes less frequently)
 def get_available_couriers(_engine: Engine) -> list:
     """Get list of available courier names"""
     if _engine is None:
@@ -62,7 +62,6 @@ def get_available_couriers(_engine: Engine) -> list:
         return []
 
 
-@st.cache_data(ttl=600)
 def get_available_vehicle_types(_engine: Engine) -> list:
     """Get list of available rider vehicle types"""
     if _engine is None:

@@ -7,76 +7,45 @@ from sqlalchemy.engine import Engine
 import time
 
 
-@st.cache_data(ttl=600)
-def slice_by_year(_engine: Engine, year: int) -> tuple[pd.DataFrame, float]:
+@st.cache_data(ttl=300)  # Cache for 5 minutes
+def slice_by_year(_engine: Engine, year: int) -> tuple[pd.DataFrame, float, str, tuple | None]:
     """Slice data for a specific year across all dimensions"""
     if _engine is None:
-        return pd.DataFrame(), 0.0
+        return pd.DataFrame(), 0.0, "", None
     
     query = """
         SELECT 
+            dd.year,
             dd.month_name,
             dp.category,
-            du.city AS user_city,
+            du.city,
             SUM(fs.sales_amount) AS total_sales,
             SUM(fs.quantity) AS total_quantity,
-            COUNT(DISTINCT fs.order_number) AS total_orders
+            COUNT(fs.order_number) AS total_orders
         FROM fact_sales fs
         JOIN dim_date dd ON fs.date_key = dd.date_key
         JOIN dim_product dp ON fs.product_key = dp.product_key
         JOIN dim_user du ON fs.customer_key = du.user_key
         WHERE dd.year = %s
-        GROUP BY dd.month_name, dp.category, du.city
+        GROUP BY dd.year, dd.month_name, dp.category, du.city
         ORDER BY total_sales DESC;
     """
+    params = (year,)
     try:
         start_time = time.perf_counter()
-        df = pd.read_sql(query, _engine, params=(year,))
+        df = pd.read_sql(query, _engine, params=params)
         duration = time.perf_counter() - start_time
-        return df, duration
+        return df, duration, query, params
     except Exception as e:
         st.error(f"Failed to execute slice query: {e}")
-        return pd.DataFrame(), 0.0
+        return pd.DataFrame(), 0.0, query, params
 
 
-@st.cache_data(ttl=600)
-def slice_by_category(_engine: Engine, category: str) -> tuple[pd.DataFrame, float]:
+@st.cache_data(ttl=300)  # Cache for 5 minutes
+def slice_by_category(_engine: Engine, category: str) -> tuple[pd.DataFrame, float, str, tuple | None]:
     """Slice data for a specific product category"""
     if _engine is None:
-        return pd.DataFrame(), 0.0
-    
-    query = """
-        SELECT 
-            dd.year,
-            dd.month_name,
-            dp.product_name,
-            du.city AS user_city,
-            SUM(fs.sales_amount) AS total_sales,
-            SUM(fs.quantity) AS total_quantity,
-            COUNT(DISTINCT fs.order_number) AS total_orders
-        FROM fact_sales fs
-        JOIN dim_date dd ON fs.date_key = dd.date_key
-        JOIN dim_product dp ON fs.product_key = dp.product_key
-        JOIN dim_user du ON fs.customer_key = du.user_key
-        WHERE dp.category = %s
-        GROUP BY dd.year, dd.month_name, dp.product_name, du.city
-        ORDER BY total_sales DESC;
-    """
-    try:
-        start_time = time.perf_counter()
-        df = pd.read_sql(query, _engine, params=(category,))
-        duration = time.perf_counter() - start_time
-        return df, duration
-    except Exception as e:
-        st.error(f"Failed to execute slice query: {e}")
-        return pd.DataFrame(), 0.0
-
-
-@st.cache_data(ttl=600)
-def slice_by_city(_engine: Engine, city: str) -> tuple[pd.DataFrame, float]:
-    """Slice data for a specific user city"""
-    if _engine is None:
-        return pd.DataFrame(), 0.0
+        return pd.DataFrame(), 0.0, "", None
     
     query = """
         SELECT 
@@ -84,34 +53,71 @@ def slice_by_city(_engine: Engine, city: str) -> tuple[pd.DataFrame, float]:
             dd.month_name,
             dp.category,
             dp.product_name,
+            du.city,
             SUM(fs.sales_amount) AS total_sales,
             SUM(fs.quantity) AS total_quantity,
-            COUNT(DISTINCT fs.order_number) AS total_orders
+            COUNT(fs.order_number) AS total_orders
+        FROM fact_sales fs
+        JOIN dim_date dd ON fs.date_key = dd.date_key
+        JOIN dim_product dp ON fs.product_key = dp.product_key
+        JOIN dim_user du ON fs.customer_key = du.user_key
+        WHERE dp.category = %s
+        GROUP BY dd.year, dd.month_name, dp.category, dp.product_name, du.city
+        ORDER BY total_sales DESC;
+    """
+    params = (category,)
+    try:
+        start_time = time.perf_counter()
+        df = pd.read_sql(query, _engine, params=params)
+        duration = time.perf_counter() - start_time
+        return df, duration, query, params
+    except Exception as e:
+        st.error(f"Failed to execute slice query: {e}")
+        return pd.DataFrame(), 0.0, query, params
+
+
+@st.cache_data(ttl=300)  # Cache for 5 minutes
+def slice_by_city(_engine: Engine, city: str) -> tuple[pd.DataFrame, float, str, tuple | None]:
+    """Slice data for a specific user city"""
+    if _engine is None:
+        return pd.DataFrame(), 0.0, "", None
+    
+    query = """
+        SELECT 
+            dd.year,
+            dd.month_name,
+            dp.category,
+            dp.product_name,
+            du.city,
+            SUM(fs.sales_amount) AS total_sales,
+            SUM(fs.quantity) AS total_quantity,
+            COUNT(fs.order_number) AS total_orders
         FROM fact_sales fs
         JOIN dim_date dd ON fs.date_key = dd.date_key
         JOIN dim_product dp ON fs.product_key = dp.product_key
         JOIN dim_user du ON fs.customer_key = du.user_key
         WHERE du.city = %s
-        GROUP BY dd.year, dd.month_name, dp.category, dp.product_name
+        GROUP BY dd.year, dd.month_name, dp.category, dp.product_name, du.city
         ORDER BY total_sales DESC;
     """
+    params = (city,)
     try:
         start_time = time.perf_counter()
-        df = pd.read_sql(query, _engine, params=(city,))
+        df = pd.read_sql(query, _engine, params=params)
         duration = time.perf_counter() - start_time
-        return df, duration
+        return df, duration, query, params
     except Exception as e:
         st.error(f"Failed to execute slice query: {e}")
-        return pd.DataFrame(), 0.0
+        return pd.DataFrame(), 0.0, query, params
 
 
-@st.cache_data(ttl=600)
-def slice_by_courier(_engine: Engine, courier: str) -> tuple[pd.DataFrame, float]:
+@st.cache_data(ttl=300)  # Cache for 5 minutes
+def slice_by_courier(_engine: Engine, courier: str) -> tuple[pd.DataFrame, float, str, tuple | None]:
     """Slice data for a specific courier"""
     if _engine is None:
-        return pd.DataFrame(), 0.0
+        return pd.DataFrame(), 0.0, "", None
     
-    AOV_EXPR = "SUM(fs.sales_amount)/NULLIF(COUNT(DISTINCT fs.order_number),0)"
+    AOV_EXPR = "SUM(fs.sales_amount)/NULLIF(COUNT(fs.order_number),0)"
     
     query = f"""
         SELECT 
@@ -121,7 +127,7 @@ def slice_by_courier(_engine: Engine, courier: str) -> tuple[pd.DataFrame, float
             dp.category,
             du.city,
             dr.vehicleType,
-            COUNT(DISTINCT fs.order_number) AS total_orders,
+            COUNT(fs.order_number) AS total_orders,
             SUM(fs.sales_amount) AS total_sales,
             SUM(fs.quantity) AS total_quantity,
             {AOV_EXPR} AS avg_order_value
@@ -134,11 +140,47 @@ def slice_by_courier(_engine: Engine, courier: str) -> tuple[pd.DataFrame, float
         GROUP BY dr.courier_name, dd.year, dd.month_name, dp.category, du.city, dr.vehicleType
         ORDER BY dd.year, dd.month_name, total_sales DESC;
     """
+    params = (courier,)
     try:
         start_time = time.perf_counter()
-        df = pd.read_sql(query, _engine, params=(courier,))
+        df = pd.read_sql(query, _engine, params=params)
         duration = time.perf_counter() - start_time
-        return df, duration
+        return df, duration, query, params
     except Exception as e:
         st.error(f"Failed to execute courier slice query: {e}")
-        return pd.DataFrame(), 0.0
+        return pd.DataFrame(), 0.0, query, params
+
+
+@st.cache_data(ttl=300)  # Cache for 5 minutes
+def slice_by_month(_engine: Engine, year: int, month: int) -> tuple[pd.DataFrame, float, str, tuple | None]:
+    """Slice data for a specific year and month"""
+    if _engine is None:
+        return pd.DataFrame(), 0.0, "", None
+    
+    query = """
+        SELECT 
+            dd.year,
+            dd.month,
+            dd.month_name,
+            dp.category,
+            du.city,
+            SUM(fs.sales_amount) AS total_sales,
+            SUM(fs.quantity) AS total_quantity,
+            COUNT(fs.order_number) AS total_orders
+        FROM fact_sales fs
+        JOIN dim_date dd ON fs.date_key = dd.date_key
+        JOIN dim_product dp ON fs.product_key = dp.product_key
+        JOIN dim_user du ON fs.customer_key = du.user_key
+        WHERE dd.year = %s AND dd.month = %s
+        GROUP BY dd.year, dd.month, dd.month_name, dp.category, du.city
+        ORDER BY total_sales DESC;
+    """
+    params = (year, month)
+    try:
+        start_time = time.perf_counter()
+        df = pd.read_sql(query, _engine, params=params)
+        duration = time.perf_counter() - start_time
+        return df, duration, query, params
+    except Exception as e:
+        st.error(f"Failed to execute month slice query: {e}")
+        return pd.DataFrame(), 0.0, query, params

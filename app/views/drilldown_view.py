@@ -83,14 +83,17 @@ def show_year_to_month_drilldown(engine):
     st.caption("Explore monthly details for a specific year")
     
     # Get available years
-    years = get_available_years(engine)
+    all_years = get_available_years(engine)
+    # Filter for 2024 and 2025
+    years = [year for year in all_years if year in [2024, 2025]]
+    
     if not years:
-        st.warning("No years available.")
+        st.warning("No data available for 2024 or 2025.")
         return
     
     selected_year = st.selectbox("Select Year to Drill Down:", years, key="dd_year")
     
-    df, duration = drilldown_year_to_month(engine, selected_year)
+    df, duration, query, params = drilldown_year_to_month(engine, selected_year)
     
     if df.empty:
         st.warning(f"No data available for year {selected_year}.")
@@ -156,9 +159,12 @@ def show_month_to_day_drilldown(engine):
     st.caption("Explore daily details for a specific month")
     
     # Get available years
-    years = get_available_years(engine)
+    all_years = get_available_years(engine)
+    # Filter for 2024 and 2025
+    years = [year for year in all_years if year in [2024, 2025]]
+    
     if not years:
-        st.warning("No years available.")
+        st.warning("No data available for 2024 or 2025.")
         return
     
     col1, col2 = st.columns(2)
@@ -172,7 +178,7 @@ def show_month_to_day_drilldown(engine):
             key="dd_month"
         )
     
-    df, duration = drilldown_month_to_day(engine, selected_year, selected_month)
+    df, duration, query, params = drilldown_month_to_day(engine, selected_year, selected_month)
     
     if df.empty:
         month_name = pd.to_datetime(f"2000-{selected_month:02d}-01").strftime('%B')
@@ -254,7 +260,7 @@ def show_category_to_product_drilldown(engine):
     
     selected_category = st.selectbox("Select Category to Drill Down:", categories, key="dd_category")
     
-    df, duration = drilldown_category_to_product(engine, selected_category)
+    df, duration, query, params = drilldown_category_to_product(engine, selected_category)
     
     if df.empty:
         st.warning(f"No products found in category: {selected_category}.")
@@ -341,7 +347,7 @@ def show_courier_to_vehicle_drilldown(engine):
     st.divider()
     
     # Execute drill-down query
-    df, duration = drilldown_courier_to_vehicle(engine, selected_courier)
+    df, duration, query, params = drilldown_courier_to_vehicle(engine, selected_courier)
     
     if df.empty:
         st.warning(f"No vehicle data available for {selected_courier}.")

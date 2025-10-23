@@ -107,13 +107,16 @@ def show_dice_view(engine):
     st.divider()
     
     # Get available values for all dimensions
-    years = get_available_years(engine)
+    all_years = get_available_years(engine)
+    # Filter for 2024 and 2025
+    years = [year for year in all_years if year in [2024, 2025]]
+    
     categories = get_available_categories(engine)
     cities = get_available_cities(engine)
     couriers = get_available_couriers(engine)
     
     if not years or not categories or not cities or not couriers:
-        st.warning("Insufficient data available for dice operation.")
+        st.warning("Insufficient data available for dice operation (may be missing data for 2024/2025).")
         return
     
     # Filter selection
@@ -130,7 +133,7 @@ def show_dice_view(engine):
         st.markdown("<br>", unsafe_allow_html=True)
         selected_years = st.multiselect(
             "Select Years:",
-            years,
+            years,  # Use the filtered list
             default=[years[-1]] if years else [],
             key="dice_years"
         )
@@ -191,7 +194,7 @@ def show_dice_view(engine):
         if selected_years:
             st.success(f"**Years:** {', '.join(map(str, selected_years))}")
         else:
-            st.info("**Years:** All")
+            st.info("**Years:** All (2024, 2025)")
     with filter_cols[1]:
         if selected_categories:
             st.success(f"**Categories:** {', '.join(selected_categories)}")
@@ -209,7 +212,9 @@ def show_dice_view(engine):
             st.info("**Couriers:** All")
     
     # Execute dice query
-    df, duration = dice_multi_dimension(engine, selected_years, selected_categories, selected_cities, selected_couriers)
+    # If no years are selected, pass the filtered list of available years
+    query_years = selected_years if selected_years else years
+    df, duration = dice_multi_dimension(engine, query_years, selected_categories, selected_cities, selected_couriers)
     
     if df.empty:
         st.warning("No data matches the selected criteria.")
@@ -226,7 +231,9 @@ def show_dice_view(engine):
     with col3:
         st.metric("Total Quantity", f"{df['total_quantity'].sum():,}")
     with col4:
-        st.metric("Avg Order Value", f"₱{(df['total_sales'].sum() / df['total_orders'].sum()):,.2f}")
+        # Avoid division by zero if total_orders is 0
+        avg_order_val = (df['total_sales'].sum() / df['total_orders'].sum()) if df['total_orders'].sum() > 0 else 0
+        st.metric("Avg Order Value", f"₱{avg_order_val:,.2f}")
     
     st.divider()
     
@@ -242,7 +249,7 @@ def show_dice_view(engine):
         show_summary_analysis(df)
     
     with tab2:
-        show_trend_analysis(df, selected_years)
+        show_trend_analysis(df, query_years) # Pass the years used in the query
     
     with tab3:
         show_top_performers(df)
@@ -283,17 +290,17 @@ def show_summary_analysis(df):
     with col2:
         # By City
         st.markdown("**Sales by City**")
-        city_summary = df.groupby('user_city').agg({
+        city_summary = df.groupby('city').agg({
             'total_sales': 'sum',
             'total_orders': 'sum'
         }).reset_index().sort_values('total_sales', ascending=False).head(10)
         
         fig = px.bar(
             city_summary,
-            y='user_city',
+            y='city',
             x='total_sales',
             orientation='h',
-            labels={'user_city': 'City', 'total_sales': 'Total Sales (₱)'},
+            labels={'city': 'City', 'total_sales': 'Total Sales (₱)'},
             color='total_sales',
             color_continuous_scale='oranges'
         )

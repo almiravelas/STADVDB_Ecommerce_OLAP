@@ -7,7 +7,7 @@ from sqlalchemy.engine import Engine
 import time
 
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=300)  # Cache for 5 minutes
 def pivot_category_by_month(_engine: Engine) -> tuple[pd.DataFrame, float]:
     """Pivot: Categories as rows, months as columns"""
     if _engine is None:
@@ -36,7 +36,7 @@ def pivot_category_by_month(_engine: Engine) -> tuple[pd.DataFrame, float]:
         return pd.DataFrame(), 0.0
 
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=300)  # Cache for 5 minutes
 def pivot_city_by_category(_engine: Engine) -> tuple[pd.DataFrame, float]:
     """Pivot: Cities vs Categories"""
     if _engine is None:
@@ -64,7 +64,7 @@ def pivot_city_by_category(_engine: Engine) -> tuple[pd.DataFrame, float]:
         return pd.DataFrame(), 0.0
 
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=300)  # Cache for 5 minutes
 def pivot_year_by_quarter(_engine: Engine) -> tuple[pd.DataFrame, float]:
     """Pivot: Year vs Quarter for high-level trend"""
     if _engine is None:
