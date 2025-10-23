@@ -47,9 +47,8 @@ def show_pivot_view(engine):
     <div class='pivot-header'>
         <h2>▧ Pivot Operations</h2>
         <p>
-            <strong>Pivot</strong> rotates the data axes to provide alternative presentations of the data.
-            It allows you to view the same data from different perspectives by swapping rows and columns.
-            For example: View Categories × Months or Cities × Categories matrix.
+            <strong>Pivot</strong> rotates the data axes, allowing to view the same data from different perspectives
+            For example: View Categories Months or Cities Categories matrix.
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -58,26 +57,26 @@ def show_pivot_view(engine):
     pivot_option = st.selectbox(
         "Select Pivot Perspective:",
         [
-            "Categories × Months (Time Series)",
-            "Cities × Categories (Geographic Distribution)",
-            "Years × Quarters (Temporal Overview)"
+            "Categories Months (Time Series)",
+            "Cities Categories (Geographic Distribution)",
+            "Years Quarters (Temporal Overview)"
         ],
         key="pivot_type"
     )
     
     st.divider()
     
-    if pivot_option == "Categories × Months (Time Series)":
+    if pivot_option == "Categories Months (Time Series)":
         show_category_month_pivot(engine)
-    elif pivot_option == "Cities × Categories (Geographic Distribution)":
+    elif pivot_option == "Cities Categories (Geographic Distribution)":
         show_city_category_pivot(engine)
-    elif pivot_option == "Years × Quarters (Temporal Overview)":
+    elif pivot_option == "Years Quarters (Temporal Overview)":
         show_year_quarter_pivot(engine)
 
 
 def show_category_month_pivot(engine):
     """Pivot: Categories as rows, months as columns"""
-    st.subheader("🛍️ × 📅 Categories by Month Pivot")
+    st.subheader("Categories by Month Pivot")
     st.caption("Product categories across different months")
     
     df, duration = pivot_category_by_month(engine)
@@ -88,10 +87,10 @@ def show_category_month_pivot(engine):
     
     st.info(f"Query executed in {duration:.4f} seconds")
     
-    # Create year-month column for better grouping
+    # Create year-month column
     df['year_month'] = df['year'].astype(str) + '-' + df['month_name']
     
-    # Select year for focused view
+    # Select year
     all_available_years = sorted(df['year'].unique())
     # Filter for 2024 and 2025
     available_years = [year for year in all_available_years if year in [2024, 2025]]
@@ -157,11 +156,10 @@ def show_category_month_pivot(engine):
         height=400
     )
     st.plotly_chart(fig, use_container_width=True)
-    
-    # Line chart for trends
+
     st.subheader("Category Sales Trends")
     
-    # Prepare data for line chart
+    # line chart
     line_data = df_year.groupby(['month', 'month_name', 'category'])['total_sales'].sum().reset_index()
     line_data = line_data.sort_values('month')
     
@@ -179,7 +177,7 @@ def show_category_month_pivot(engine):
     
     # All years comparison
     st.subheader("Multi-Year Category Performance")
-    # Filter original df for only 2024 and 2025 to show in comparison chart
+    # Filter original df for only 2024 and 2025
     df_filtered_years = df[df['year'].isin([2024, 2025])]
     yearly_category = df_filtered_years.groupby(['year', 'category'])['total_sales'].sum().reset_index()
     
@@ -266,7 +264,6 @@ def show_city_category_pivot(engine):
     # Stacked bar chart
     st.subheader("Category Distribution by City")
     
-    # Prepare data for stacked bar
     plot_data = pivot_sales_top.drop('Total', axis=1)
     
     fig = go.Figure()

@@ -158,9 +158,7 @@ def show_month_to_day_drilldown(engine):
     st.subheader("📅 Drill Down: Month → Day")
     st.caption("Explore daily details for a specific month")
     
-    # Get available years
     all_years = get_available_years(engine)
-    # Filter for 2024 and 2025
     years = [year for year in all_years if year in [2024, 2025]]
     
     if not years:
@@ -325,8 +323,8 @@ def show_category_to_product_drilldown(engine):
 
 def show_courier_to_vehicle_drilldown(engine):
     """Drill down from courier to vehicle type"""
-    st.subheader("🚚 Courier → Vehicle Type Drill-down")
-    st.caption("Select a courier to see breakdown by vehicle type")
+    st.subheader("Courier to Vehicle Drill-down")
+    st.caption("Select a courier")
     
     # Get available couriers
     couriers = get_available_couriers(engine)

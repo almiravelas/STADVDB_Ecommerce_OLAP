@@ -133,7 +133,7 @@ def show_dice_view(engine):
         st.markdown("<br>", unsafe_allow_html=True)
         selected_years = st.multiselect(
             "Select Years:",
-            years,  # Use the filtered list
+            years,  
             default=[years[-1]] if years else [],
             key="dice_years"
         )
@@ -184,7 +184,7 @@ def show_dice_view(engine):
     
     # Validate selections
     if not selected_years and not selected_categories and not selected_cities and not selected_couriers:
-        st.info("Please select at least one value from any dimension to perform dice operation.")
+        st.info("Select at least one value from any dimension.")
         return
     
     # Show active filters
@@ -212,7 +212,6 @@ def show_dice_view(engine):
             st.info("**Couriers:** All")
     
     # Execute dice query
-    # If no years are selected, pass the filtered list of available years
     query_years = selected_years if selected_years else years
     df, duration = dice_multi_dimension(engine, query_years, selected_categories, selected_cities, selected_couriers)
     
@@ -231,7 +230,6 @@ def show_dice_view(engine):
     with col3:
         st.metric("Total Quantity", f"{df['total_quantity'].sum():,}")
     with col4:
-        # Avoid division by zero if total_orders is 0
         avg_order_val = (df['total_sales'].sum() / df['total_orders'].sum()) if df['total_orders'].sum() > 0 else 0
         st.metric("Avg Order Value", f"₱{avg_order_val:,.2f}")
     
@@ -249,7 +247,7 @@ def show_dice_view(engine):
         show_summary_analysis(df)
     
     with tab2:
-        show_trend_analysis(df, query_years) # Pass the years used in the query
+        show_trend_analysis(df, query_years) 
     
     with tab3:
         show_top_performers(df)
@@ -259,7 +257,7 @@ def show_dice_view(engine):
 
 
 def show_summary_analysis(df):
-    """Show summary analysis of diced data"""
+    """Show summary analysis"""
     st.subheader("Summary by Dimensions")
     
     col1, col2 = st.columns(2)

@@ -47,7 +47,7 @@ def show_rollup_view(engine):
     <div class='rollup-header'>
         <h2>▣ Roll-up Operations</h2>
         <p>
-            <strong>Roll-up</strong> aggregates data by climbing up the concept hierarchy, moving from lower to higher levels of granularity.
+            <strong>Roll-up</strong> aggregates data by moving from lower to higher levels of granularity.
             For example: Day → Month → Quarter → Year, or Product → Category.
         </p>
     </div>

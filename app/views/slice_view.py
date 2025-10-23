@@ -53,7 +53,7 @@ def show_slice_view(engine):
     <div class='slice-header'>
         <h2>▥ Slice Operations</h2>
         <p>
-            <strong>Slice</strong> selects a single value from one dimension, creating a sub-cube by fixing one dimension.
+            <strong>Slice</strong> selects a single value from one dimension, creating a sub-cube.
             For example: View all data for Year=2024, or Category='Electronics', or City='Manila'.
         </p>
     </div>
@@ -204,7 +204,7 @@ def show_year_slice(engine):
 
 def show_category_slice(engine):
     """Slice by specific category"""
-    st.subheader("🛍️ Slice by Product Category")
+    st.subheader("Slice by Product Category")
     st.caption("View all dimensions for a specific product category")
     
     # Get available categories
@@ -314,7 +314,7 @@ def show_category_slice(engine):
 
 def show_city_slice(engine):
     """Slice by specific city"""
-    st.subheader("📍 Slice by City")
+    st.subheader("Slice by City")
     st.caption("View all dimensions for a specific user city")
     
     # Get available cities
@@ -422,8 +422,8 @@ def show_city_slice(engine):
 
 
 def show_courier_slice(engine):
-    st.subheader("🚚 Slice by Courier")
-    st.caption("Fix the courier dimension to view data for a specific delivery service")
+    st.subheader("Slice by Courier")
+    st.caption("Fix the courier dimension to view courier data")
     
     # Get available couriers
     couriers = get_available_couriers(engine)
